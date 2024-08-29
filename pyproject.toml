@@ -1,0 +1,74 @@
+[build-system]
+build-backend = "scikit_build_core.build"
+requires = ["scikit-build-core >=0.4.3", "nanobind >=1.3.2"]
+
+[project]
+authors = [
+  {name = "Alex Kaszynski", email = "akascap@gmail.com"}
+]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Science/Research",
+  "Topic :: Scientific/Engineering :: Information Analysis",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: Microsoft :: Windows",
+  "Operating System :: POSIX",
+  "Operating System :: MacOS",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12"
+]
+dependencies = [
+  "numpy>=1.22.4"
+]
+description = "Read nodes and elements from LS-DYNA decks."
+name = "mapdl-archive"
+readme = "README.md"
+requires-python = ">=3.9"
+version = "0.1.dev0"
+
+[project.urls]
+Repository = "https://github.com/akaszynski/lsdyna-mesh-reader"
+
+[tool.cibuildwheel]
+archs = ["auto64"]  # 64-bit only
+skip = "cp38-* pp* *musllinux*"  # disable PyPy and musl-based wheels
+test-command = "pytest {project}/tests"
+test-requires = "pytest"
+
+[tool.cibuildwheel.macos]
+archs = ["native"]
+
+[tool.cibuildwheel.macos.environment]
+MACOSX_DEPLOYMENT_TARGET = "10.14"  # Needed for full C++17 support on MacOS
+
+[tool.codespell]
+ignore-words-list = "POIN,parm"
+quiet-level = 3
+skip = '*.cxx,*.h,*.gif,*.png,*.jpg,*.js,*.html,*.doctree,*.ttf,*.woff,*.woff2,*.eot,*.mp4,*.inv,*.pickle,*.ipynb,flycheck*,./.git/*,./.hypothesis/*,*.yml,./doc/build/*,./doc/images/*,./dist/*,*~,.hypothesis*,*.cpp,*.c,*.dat,*.cdb'
+
+[tool.mypy]
+plugins = ["numpy.typing.mypy_plugin", 'npt_promote']
+strict = true
+
+[tool.pylsp-mypy]
+enabled = true
+live_mode = true
+strict = true
+
+[tool.pytest.ini_options]
+testpaths = 'tests'
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+extend-select = ["I"]
+
+[tool.scikit-build]
+# Setuptools-style build caching in a local directory
+build-dir = "build/{wheel_tag}"
+minimum-version = "0.4"
+sdist.exclude = [".github", "*.png", "tests", ".mypy_cache", ".pre-commit-config.yaml", "*_cache", "CONTRIBUTING.md", ".gitignore"]
+sdist.include = ["*.cpp"]
