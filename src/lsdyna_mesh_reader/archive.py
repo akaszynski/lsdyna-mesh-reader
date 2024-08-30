@@ -8,11 +8,10 @@ import shutil
 from typing import Any, Dict, List, Optional, Sequence, TypeVar, Union
 
 import numpy as np
-from numpy.typing import NDArray
-from pyvista import ID_TYPE, CellType, UnstructuredGrid
-
 from mapdl_archive import _archive, _reader
 from mapdl_archive.mesh import Mesh
+from numpy.typing import NDArray
+from pyvista import ID_TYPE, CellType, UnstructuredGrid
 
 # types
 NPArray_FLOAT32 = NDArray[np.float32]

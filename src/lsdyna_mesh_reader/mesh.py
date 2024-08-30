@@ -5,13 +5,12 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple, TypeVar, Union, cast
 
 import numpy as np
+from mapdl_archive import _archive, _reader
+from mapdl_archive.elements import ETYPE_MAP
 from numpy.typing import NDArray
 from pyvista import ID_TYPE, CellArray
 from pyvista.core.pointset import PolyData, UnstructuredGrid
 from vtkmodules.util.numpy_support import numpy_to_vtk
-
-from mapdl_archive import _archive, _reader
-from mapdl_archive.elements import ETYPE_MAP
 
 COMP_DICT = Dict[str, NDArray[np.int32]]
 

@@ -23,24 +23,24 @@ uint8_t VTK_QUADRATIC_HEXAHEDRON = 25;
 
 // Contains data for VTK UnstructuredGrid
 struct VtkData {
-    int64_t *offset;
-    int64_t *cells;
-    uint8_t *celltypes;
-    int loc;   // current position within cells
-    int *nref; // conversion between ansys and vtk numbering
+  int64_t *offset;
+  int64_t *cells;
+  uint8_t *celltypes;
+  int loc;   // current position within cells
+  int *nref; // conversion between ansys and vtk numbering
 };
 struct VtkData vtk_data;
 
 // Populate offset, cell type, and prepare the cell array for a cell
 static inline void add_cell(int n_points, uint8_t celltype) {
-    vtk_data.offset[0] = vtk_data.loc;
-    vtk_data.offset++;
+  vtk_data.offset[0] = vtk_data.loc;
+  vtk_data.offset++;
 
-    vtk_data.celltypes[0] = celltype;
-    vtk_data.celltypes++;
+  vtk_data.celltypes[0] = celltype;
+  vtk_data.celltypes++;
 
-    /* printf("Finished adding cell\n"); */
-    return;
+  /* printf("Finished adding cell\n"); */
+  return;
 }
 
 /* ============================================================================
@@ -74,34 +74,34 @@ static inline void add_cell(int n_points, uint8_t celltype) {
  * 19        (3, 7)
  */
 static inline void add_hex(const int *elem, int nnode) {
-    int i;
-    bool quad = nnode > 8;
-    if (quad) {
-        add_cell(20, VTK_QUADRATIC_HEXAHEDRON);
-    } else {
-        add_cell(8, VTK_HEXAHEDRON);
-    }
+  int i;
+  bool quad = nnode > 8;
+  if (quad) {
+    add_cell(20, VTK_QUADRATIC_HEXAHEDRON);
+  } else {
+    add_cell(8, VTK_HEXAHEDRON);
+  }
 
-    // Always add linear
-    for (i = 0; i < 8; i++) {
-        vtk_data.cells[vtk_data.loc++] = vtk_data.nref[elem[i]];
-    }
+  // Always add linear
+  for (i = 0; i < 8; i++) {
+    vtk_data.cells[vtk_data.loc++] = vtk_data.nref[elem[i]];
+  }
 
-    // translate connectivity
-    if (quad) {
-        for (i = 8; i < nnode; i++) {
-            vtk_data.cells[vtk_data.loc++] = vtk_data.nref[elem[i]];
-            /* printf("added %d at %d using node %d\n", vtk_data.nref[elem[i]],
-             * vtk_data.loc - 1, elem[i]); */
-        }
-        // ANSYS sometimes doesn't write 0 at the end of the element block
-        // and quadratic cells always contain 10 nodes
-        for (i = nnode; i < 20; i++) {
-            vtk_data.cells[vtk_data.loc++] = -1;
-        }
+  // translate connectivity
+  if (quad) {
+    for (i = 8; i < nnode; i++) {
+      vtk_data.cells[vtk_data.loc++] = vtk_data.nref[elem[i]];
+      /* printf("added %d at %d using node %d\n", vtk_data.nref[elem[i]],
+       * vtk_data.loc - 1, elem[i]); */
     }
+    // ANSYS sometimes doesn't write 0 at the end of the element block
+    // and quadratic cells always contain 10 nodes
+    for (i = nnode; i < 20; i++) {
+      vtk_data.cells[vtk_data.loc++] = -1;
+    }
+  }
 
-    return;
+  return;
 }
 
 /* ============================================================================
@@ -128,60 +128,60 @@ on the edges defined by :
 (0,1), (1,2), (2,0), (3,4), (4,5), (5,3), (0,3), (1,4), (2,5)
 */
 static inline void add_wedge(const int *elem, int nnode) {
-    bool quad = nnode > 8;
-    if (quad) {
-        add_cell(15, VTK_QUADRATIC_WEDGE);
-    } else {
-        add_cell(6, VTK_WEDGE);
-    }
+  bool quad = nnode > 8;
+  if (quad) {
+    add_cell(15, VTK_QUADRATIC_WEDGE);
+  } else {
+    add_cell(6, VTK_WEDGE);
+  }
 
-    // [0, 1, 2, 2, 3, 4, 5, 5]
-    vtk_data.cells[vtk_data.loc++] = vtk_data.nref[elem[2]];
-    vtk_data.cells[vtk_data.loc++] = vtk_data.nref[elem[1]];
-    vtk_data.cells[vtk_data.loc++] = vtk_data.nref[elem[0]];
-    vtk_data.cells[vtk_data.loc++] = vtk_data.nref[elem[6]];
-    vtk_data.cells[vtk_data.loc++] = vtk_data.nref[elem[5]];
-    vtk_data.cells[vtk_data.loc++] = vtk_data.nref[elem[4]];
+  // [0, 1, 2, 2, 3, 4, 5, 5]
+  vtk_data.cells[vtk_data.loc++] = vtk_data.nref[elem[2]];
+  vtk_data.cells[vtk_data.loc++] = vtk_data.nref[elem[1]];
+  vtk_data.cells[vtk_data.loc++] = vtk_data.nref[elem[0]];
+  vtk_data.cells[vtk_data.loc++] = vtk_data.nref[elem[6]];
+  vtk_data.cells[vtk_data.loc++] = vtk_data.nref[elem[5]];
+  vtk_data.cells[vtk_data.loc++] = vtk_data.nref[elem[4]];
 
-    if (quad) { // todo: check if index > nnode - 1
-        vtk_data.cells[vtk_data.loc++] = vtk_data.nref[elem[9]];
-        vtk_data.cells[vtk_data.loc++] = vtk_data.nref[elem[8]];
-        vtk_data.cells[vtk_data.loc++] = vtk_data.nref[elem[11]];
-        vtk_data.cells[vtk_data.loc++] = vtk_data.nref[elem[13]];
-        vtk_data.cells[vtk_data.loc++] = vtk_data.nref[elem[12]];
-        vtk_data.cells[vtk_data.loc++] = vtk_data.nref[elem[15]];
-        vtk_data.cells[vtk_data.loc++] = vtk_data.nref[elem[18]];
-        vtk_data.cells[vtk_data.loc++] = vtk_data.nref[elem[17]];
-        vtk_data.cells[vtk_data.loc++] = vtk_data.nref[elem[16]];
-    }
+  if (quad) { // todo: check if index > nnode - 1
+    vtk_data.cells[vtk_data.loc++] = vtk_data.nref[elem[9]];
+    vtk_data.cells[vtk_data.loc++] = vtk_data.nref[elem[8]];
+    vtk_data.cells[vtk_data.loc++] = vtk_data.nref[elem[11]];
+    vtk_data.cells[vtk_data.loc++] = vtk_data.nref[elem[13]];
+    vtk_data.cells[vtk_data.loc++] = vtk_data.nref[elem[12]];
+    vtk_data.cells[vtk_data.loc++] = vtk_data.nref[elem[15]];
+    vtk_data.cells[vtk_data.loc++] = vtk_data.nref[elem[18]];
+    vtk_data.cells[vtk_data.loc++] = vtk_data.nref[elem[17]];
+    vtk_data.cells[vtk_data.loc++] = vtk_data.nref[elem[16]];
+  }
 
-    return;
+  return;
 }
 
 static inline void add_pyr(const int *elem, int nnode) {
-    int i; // counter
-    bool quad = nnode > 8;
-    if (quad) {
-        add_cell(13, VTK_QUADRATIC_PYRAMID);
-    } else {
-        add_cell(5, VTK_PYRAMID);
+  int i; // counter
+  bool quad = nnode > 8;
+  if (quad) {
+    add_cell(13, VTK_QUADRATIC_PYRAMID);
+  } else {
+    add_cell(5, VTK_PYRAMID);
+  }
+
+  // [0, 1, 2, 3, 4, X, X, X]
+  for (i = 0; i < 5; i++) {
+    vtk_data.cells[vtk_data.loc++] = vtk_data.nref[elem[i]];
+  }
+
+  if (quad) { // todo: check if index > nnode - 1
+    for (i = 8; i < 12; i++) {
+      vtk_data.cells[vtk_data.loc++] = vtk_data.nref[elem[i]];
     }
 
-    // [0, 1, 2, 3, 4, X, X, X]
-    for (i = 0; i < 5; i++) {
-        vtk_data.cells[vtk_data.loc++] = vtk_data.nref[elem[i]];
+    for (i = 16; i < 20; i++) {
+      vtk_data.cells[vtk_data.loc++] = vtk_data.nref[elem[i]];
     }
-
-    if (quad) { // todo: check if index > nnode - 1
-        for (i = 8; i < 12; i++) {
-            vtk_data.cells[vtk_data.loc++] = vtk_data.nref[elem[i]];
-        }
-
-        for (i = 16; i < 20; i++) {
-            vtk_data.cells[vtk_data.loc++] = vtk_data.nref[elem[i]];
-        }
-    }
-    return;
+  }
+  return;
 }
 
 /* ============================================================================
@@ -203,164 +203,164 @@ static inline void add_pyr(const int *elem, int nnode) {
  * (0,1), (1,2), (2,0), (0,3), (1,3), and (2,3)
 ============================================================================ */
 static inline void add_tet(const int *elem, int nnode) {
-    bool quad = nnode > 8;
-    if (quad) {
-        add_cell(10, VTK_QUADRATIC_TETRA);
-    } else {
-        add_cell(4, VTK_TETRA);
-    }
+  bool quad = nnode > 8;
+  if (quad) {
+    add_cell(10, VTK_QUADRATIC_TETRA);
+  } else {
+    add_cell(4, VTK_TETRA);
+  }
 
-    // edge nodes
-    // [0, 1, 2, 2, 3, 3, 3, 3]
-    vtk_data.cells[vtk_data.loc++] = vtk_data.nref[elem[0]];
-    vtk_data.cells[vtk_data.loc++] = vtk_data.nref[elem[1]];
-    vtk_data.cells[vtk_data.loc++] = vtk_data.nref[elem[2]];
-    vtk_data.cells[vtk_data.loc++] = vtk_data.nref[elem[4]];
+  // edge nodes
+  // [0, 1, 2, 2, 3, 3, 3, 3]
+  vtk_data.cells[vtk_data.loc++] = vtk_data.nref[elem[0]];
+  vtk_data.cells[vtk_data.loc++] = vtk_data.nref[elem[1]];
+  vtk_data.cells[vtk_data.loc++] = vtk_data.nref[elem[2]];
+  vtk_data.cells[vtk_data.loc++] = vtk_data.nref[elem[4]];
 
-    if (quad) { // todo: check if index > nnode - 1
-        vtk_data.cells[vtk_data.loc++] = vtk_data.nref[elem[8]];
-        vtk_data.cells[vtk_data.loc++] = vtk_data.nref[elem[9]];
-        vtk_data.cells[vtk_data.loc++] = vtk_data.nref[elem[11]];
-        vtk_data.cells[vtk_data.loc++] = vtk_data.nref[elem[16]];
-        vtk_data.cells[vtk_data.loc++] = vtk_data.nref[elem[17]];
-        vtk_data.cells[vtk_data.loc++] = vtk_data.nref[elem[18]];
-    }
+  if (quad) { // todo: check if index > nnode - 1
+    vtk_data.cells[vtk_data.loc++] = vtk_data.nref[elem[8]];
+    vtk_data.cells[vtk_data.loc++] = vtk_data.nref[elem[9]];
+    vtk_data.cells[vtk_data.loc++] = vtk_data.nref[elem[11]];
+    vtk_data.cells[vtk_data.loc++] = vtk_data.nref[elem[16]];
+    vtk_data.cells[vtk_data.loc++] = vtk_data.nref[elem[17]];
+    vtk_data.cells[vtk_data.loc++] = vtk_data.nref[elem[18]];
+  }
 
-    return;
+  return;
 }
 
 // ANSYS Tetrahedral style [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 static inline void add_tet10(const int *elem, int nnode) {
-    int i; // counter
-    bool quad = nnode > 4;
-    if (quad) {
-        add_cell(10, VTK_QUADRATIC_TETRA);
-    } else {
-        add_cell(4, VTK_TETRA);
+  int i; // counter
+  bool quad = nnode > 4;
+  if (quad) {
+    add_cell(10, VTK_QUADRATIC_TETRA);
+  } else {
+    add_cell(4, VTK_TETRA);
+  }
+
+  // edge nodes
+  vtk_data.cells[vtk_data.loc++] = vtk_data.nref[elem[0]];
+  vtk_data.cells[vtk_data.loc++] = vtk_data.nref[elem[1]];
+  vtk_data.cells[vtk_data.loc++] = vtk_data.nref[elem[2]];
+  vtk_data.cells[vtk_data.loc++] = vtk_data.nref[elem[3]];
+
+  if (quad) {
+    for (i = 4; i < nnode; i++) {
+      vtk_data.cells[vtk_data.loc++] = vtk_data.nref[elem[i]];
     }
-
-    // edge nodes
-    vtk_data.cells[vtk_data.loc++] = vtk_data.nref[elem[0]];
-    vtk_data.cells[vtk_data.loc++] = vtk_data.nref[elem[1]];
-    vtk_data.cells[vtk_data.loc++] = vtk_data.nref[elem[2]];
-    vtk_data.cells[vtk_data.loc++] = vtk_data.nref[elem[3]];
-
-    if (quad) {
-        for (i = 4; i < nnode; i++) {
-            vtk_data.cells[vtk_data.loc++] = vtk_data.nref[elem[i]];
-        }
-        // ANSYS sometimes doesn't write 0 at the end of the element block
-        // and quadratic cells always contain 10 nodes
-        for (i = nnode; i < 10; i++) {
-            vtk_data.cells[vtk_data.loc++] = -1;
-        }
+    // ANSYS sometimes doesn't write 0 at the end of the element block
+    // and quadratic cells always contain 10 nodes
+    for (i = nnode; i < 10; i++) {
+      vtk_data.cells[vtk_data.loc++] = -1;
     }
+  }
 
-    return;
+  return;
 }
 
 static inline void add_quad(const int *elem, bool is_quad) {
-    int i;
-    int n_points;
-    if (is_quad) {
-        n_points = 8;
+  int i;
+  int n_points;
+  if (is_quad) {
+    n_points = 8;
 
-        if (elem[6] == elem[7]) { // edge case: check if repeated
-            n_points = 4;
-            /* printf("Duplicate midside points found...\nCelltype - Linear\n"); */
-            add_cell(n_points, VTK_QUAD);
-        } else {
-            /* printf("Celltype - Quadratic\n"); */
-            add_cell(n_points, VTK_QUADRATIC_QUAD);
-        }
+    if (elem[6] == elem[7]) { // edge case: check if repeated
+      n_points = 4;
+      /* printf("Duplicate midside points found...\nCelltype - Linear\n"); */
+      add_cell(n_points, VTK_QUAD);
     } else {
-        n_points = 4;
-        /* printf("Celltype - Linear\n"); */
-        add_cell(n_points, VTK_QUAD);
+      /* printf("Celltype - Quadratic\n"); */
+      add_cell(n_points, VTK_QUADRATIC_QUAD);
     }
+  } else {
+    n_points = 4;
+    /* printf("Celltype - Linear\n"); */
+    add_cell(n_points, VTK_QUAD);
+  }
 
-    for (i = 0; i < n_points; i++) {
-        /* printf("(%i) %i --> ", i, elem[i]); */
-        /* printf("%i, \n", vtk_data.nref[elem[i]]); */
-        vtk_data.cells[vtk_data.loc++] = vtk_data.nref[elem[i]];
-    }
-    /* printf("\n"); */
+  for (i = 0; i < n_points; i++) {
+    /* printf("(%i) %i --> ", i, elem[i]); */
+    /* printf("%i, \n", vtk_data.nref[elem[i]]); */
+    vtk_data.cells[vtk_data.loc++] = vtk_data.nref[elem[i]];
+  }
+  /* printf("\n"); */
 
-    return;
+  return;
 }
 
 void add_tri(const int *elem, bool quad) {
-    if (quad) {
-        add_cell(6, VTK_QUADRATIC_TRIANGLE);
-    } else {
-        add_cell(3, VTK_TRIANGLE);
-    }
+  if (quad) {
+    add_cell(6, VTK_QUADRATIC_TRIANGLE);
+  } else {
+    add_cell(3, VTK_TRIANGLE);
+  }
 
-    // edge nodes
-    vtk_data.cells[vtk_data.loc++] = vtk_data.nref[elem[0]];
-    vtk_data.cells[vtk_data.loc++] = vtk_data.nref[elem[1]];
-    vtk_data.cells[vtk_data.loc++] = vtk_data.nref[elem[2]];
+  // edge nodes
+  vtk_data.cells[vtk_data.loc++] = vtk_data.nref[elem[0]];
+  vtk_data.cells[vtk_data.loc++] = vtk_data.nref[elem[1]];
+  vtk_data.cells[vtk_data.loc++] = vtk_data.nref[elem[2]];
 
-    if (quad) {
-        vtk_data.cells[vtk_data.loc++] = vtk_data.nref[elem[4]];
-        vtk_data.cells[vtk_data.loc++] = vtk_data.nref[elem[5]];
-        vtk_data.cells[vtk_data.loc++] = vtk_data.nref[elem[7]];
-    }
+  if (quad) {
+    vtk_data.cells[vtk_data.loc++] = vtk_data.nref[elem[4]];
+    vtk_data.cells[vtk_data.loc++] = vtk_data.nref[elem[5]];
+    vtk_data.cells[vtk_data.loc++] = vtk_data.nref[elem[7]];
+  }
 
-    return;
+  return;
 }
 
 void add_tri_missing_midside(const int *elem, const int n_mid) {
-    add_cell(6, VTK_QUADRATIC_TRIANGLE);
+  add_cell(6, VTK_QUADRATIC_TRIANGLE);
 
-    int i;
-    int elem_indices[] = {4, 5, 7};
+  int i;
+  int elem_indices[] = {4, 5, 7};
 
-    // edge nodes
-    vtk_data.cells[vtk_data.loc++] = vtk_data.nref[elem[0]];
-    vtk_data.cells[vtk_data.loc++] = vtk_data.nref[elem[1]];
-    vtk_data.cells[vtk_data.loc++] = vtk_data.nref[elem[2]];
+  // edge nodes
+  vtk_data.cells[vtk_data.loc++] = vtk_data.nref[elem[0]];
+  vtk_data.cells[vtk_data.loc++] = vtk_data.nref[elem[1]];
+  vtk_data.cells[vtk_data.loc++] = vtk_data.nref[elem[2]];
 
-    // add midside nodes and populate any missing midside with -1
-    for (i = 0; i < n_mid && i < 3; i++) {
-        vtk_data.cells[vtk_data.loc++] = vtk_data.nref[elem[elem_indices[i]]];
-    }
-    for (i = 3; i > n_mid; i--) {
-        vtk_data.cells[vtk_data.loc++] = -1;
-    }
+  // add midside nodes and populate any missing midside with -1
+  for (i = 0; i < n_mid && i < 3; i++) {
+    vtk_data.cells[vtk_data.loc++] = vtk_data.nref[elem[elem_indices[i]]];
+  }
+  for (i = 3; i > n_mid; i--) {
+    vtk_data.cells[vtk_data.loc++] = -1;
+  }
 
-    return;
+  return;
 }
 
 static inline void add_line(const int *elem, int nnode) {
-    bool is_quad;
-    if (nnode > 2) {
-        is_quad = elem[2] > 0;
-    } else {
-        is_quad = false;
-    }
+  bool is_quad;
+  if (nnode > 2) {
+    is_quad = elem[2] > 0;
+  } else {
+    is_quad = false;
+  }
 
-    /* printf("is_quad, %i\n", is_quad); */
-    if (is_quad) {
-        add_cell(3, VTK_QUADRATIC_EDGE);
-    } else {
-        add_cell(2, VTK_LINE);
-    }
+  /* printf("is_quad, %i\n", is_quad); */
+  if (is_quad) {
+    add_cell(3, VTK_QUADRATIC_EDGE);
+  } else {
+    add_cell(2, VTK_LINE);
+  }
 
-    // edge nodes
-    vtk_data.cells[vtk_data.loc++] = vtk_data.nref[elem[0]];
-    vtk_data.cells[vtk_data.loc++] = vtk_data.nref[elem[1]];
-    if (is_quad) {
-        vtk_data.cells[vtk_data.loc++] = vtk_data.nref[elem[2]];
-    }
+  // edge nodes
+  vtk_data.cells[vtk_data.loc++] = vtk_data.nref[elem[0]];
+  vtk_data.cells[vtk_data.loc++] = vtk_data.nref[elem[1]];
+  if (is_quad) {
+    vtk_data.cells[vtk_data.loc++] = vtk_data.nref[elem[2]];
+  }
 
-    return;
+  return;
 }
 
 static inline void add_point(const int *elem) {
-    add_cell(1, VTK_VERTEX);
-    vtk_data.cells[vtk_data.loc++] = vtk_data.nref[elem[0]];
-    return;
+  add_cell(1, VTK_VERTEX);
+  vtk_data.cells[vtk_data.loc++] = vtk_data.nref[elem[0]];
+  return;
 }
 
 /*
@@ -435,139 +435,132 @@ on the edges defined by :
  *
 
  * ==========================================================================*/
-int ans_to_vtk(
-    const int nelem,
-    const int *elem,
-    const int *elem_off,
-    const int *type_ref,
-    const int nnode,
-    const int *nnum,
-    int64_t *offset,
-    int64_t *cells,
-    uint8_t *celltypes) {
-    bool is_quad;
-    int i;          // counter
-    int nnode_elem; // number of nodes belonging to the element
-    int off;        // location of the element nodes
-    int etype;      // ANSYS element type number
+int ans_to_vtk(const int nelem, const int *elem, const int *elem_off,
+               const int *type_ref, const int nnode, const int *nnum,
+               int64_t *offset, int64_t *cells, uint8_t *celltypes) {
+  bool is_quad;
+  int i;          // counter
+  int nnode_elem; // number of nodes belonging to the element
+  int off;        // location of the element nodes
+  int etype;      // ANSYS element type number
 
-    // index ansys node number to VTK C based compatible indexing
-    // max node number should be last node
-    // Consider using a hash table here instead
-    int *nref = (int *)malloc((nnum[nnode - 1] + 1) * sizeof(int));
-    nref[0] = -1; // for missing midside nodes ANSYS uses a node number of 0
-    for (i = 0; i < nnode; i++) {
-        nref[nnum[i]] = i;
-    }
+  // index ansys node number to VTK C based compatible indexing
+  // max node number should be last node
+  // Consider using a hash table here instead
+  int *nref = (int *)malloc((nnum[nnode - 1] + 1) * sizeof(int));
+  nref[0] = -1; // for missing midside nodes ANSYS uses a node number of 0
+  for (i = 0; i < nnode; i++) {
+    nref[nnum[i]] = i;
+  }
 
-    // populate global vtk data
-    vtk_data.offset = offset;
-    vtk_data.cells = cells;
-    vtk_data.celltypes = celltypes;
-    vtk_data.nref = nref;
-    vtk_data.loc = 0;
+  // populate global vtk data
+  vtk_data.offset = offset;
+  vtk_data.cells = cells;
+  vtk_data.celltypes = celltypes;
+  vtk_data.nref = nref;
+  vtk_data.loc = 0;
 
-    // Convert each element from ANSYS connectivity to VTK connectivity
-    for (i = 0; i < nelem; i++) {
-        // etype
-        etype = elem[elem_off[i] + 1];
-        off = elem_off[i] + 10;             // to the start of the nodes
-        nnode_elem = elem_off[i + 1] - off; // number of nodes in element
+  // Convert each element from ANSYS connectivity to VTK connectivity
+  for (i = 0; i < nelem; i++) {
+    // etype
+    etype = elem[elem_off[i] + 1];
+    off = elem_off[i] + 10;             // to the start of the nodes
+    nnode_elem = elem_off[i + 1] - off; // number of nodes in element
 
-        switch (type_ref[etype]) {
-        case 0: // not supported or not set
-            add_cell(0, VTK_EMPTY_CELL);
-            break;
-        case 1: // point
-            add_point(&elem[off]);
-            break;
-        case 2: // line
-            add_line(&elem[off], nnode_elem);
-            break;
-        case 3: // shell
-            if (nnode_elem == 3) {
-                /*General triangular elements*/
-                add_tri(&elem[off], false);
+    switch (type_ref[etype]) {
+    case 0: // not supported or not set
+      add_cell(0, VTK_EMPTY_CELL);
+      break;
+    case 1: // point
+      add_point(&elem[off]);
+      break;
+    case 2: // line
+      add_line(&elem[off], nnode_elem);
+      break;
+    case 3: // shell
+      if (nnode_elem == 3) {
+        /*General triangular elements*/
+        add_tri(&elem[off], false);
 
-            } else if (nnode_elem == 4 && elem[off + 2] == elem[off + 3]) {
-                /* Degenerated linear quad elements */
-                add_tri(&elem[off], false);
+      } else if (nnode_elem == 4 && elem[off + 2] == elem[off + 3]) {
+        /* Degenerated linear quad elements */
+        add_tri(&elem[off], false);
 
-            } else if (nnode_elem == 4) {
-                /* General linear quadrangle */
-                add_quad(&elem[off], false);
+      } else if (nnode_elem == 4) {
+        /* General linear quadrangle */
+        add_quad(&elem[off], false);
 
-            } else if (nnode_elem == 6) {
-                /* Quadratic tri elements */
-                add_tri(&elem[off], true);
+      } else if (nnode_elem == 6) {
+        /* Quadratic tri elements */
+        add_tri(&elem[off], true);
 
-            } else if (nnode_elem == 8 && elem[off + 2] == elem[off + 3]) {
-                /* Degenerated quadratic quadrangle elements */
-                add_tri(&elem[off], true);
+      } else if (nnode_elem == 8 && elem[off + 2] == elem[off + 3]) {
+        /* Degenerated quadratic quadrangle elements */
+        add_tri(&elem[off], true);
 
-            } else if (nnode_elem == 8) {
-                /* General quadratic quadrangle */
-                add_quad(&elem[off], true);
+      } else if (nnode_elem == 8) {
+        /* General quadratic quadrangle */
+        add_quad(&elem[off], true);
 
-            } else if (nnode_elem == 5) {
-                // For shell/plane elements with one extra node.
-                // Check element SURF 152, with KEYOPT 5,1.
-                add_quad(&elem[off], false);
+      } else if (nnode_elem == 5) {
+        // For shell/plane elements with one extra node.
+        // Check element SURF 152, with KEYOPT 5,1.
+        add_quad(&elem[off], false);
 
-            } else if (nnode_elem == 10) {
-                // For quadratic shell/plane elements with two extra nodes.
-                // Check element TARGET170.
-                add_quad(&elem[off], true);
+      } else if (nnode_elem == 10) {
+        // For quadratic shell/plane elements with two extra nodes.
+        // Check element TARGET170.
+        add_quad(&elem[off], true);
 
-            } else {
-                // Any other case. Possible when missing midside nodes.
-                is_quad = nnode_elem > 5;
+      } else {
+        // Any other case. Possible when missing midside nodes.
+        is_quad = nnode_elem > 5;
 
-                // Check degenerate triangle
-                if (elem[off + 2] == elem[off + 3]) {
-                    if (is_quad) {
-                        add_tri_missing_midside(&elem[off], 3 - (8 - nnode_elem));
-                    } else {
-                        add_tri(&elem[off], false);
-                    }
-                } else {
-                    // printf(" The type could not be identified. Check vtk_support.c
-                    // file"); printf("Number of elements is %d\n" , nnode_elem);
+        // Check degenerate triangle
+        if (elem[off + 2] == elem[off + 3]) {
+          if (is_quad) {
+            add_tri_missing_midside(&elem[off], 3 - (8 - nnode_elem));
+          } else {
+            add_tri(&elem[off], false);
+          }
+        } else {
+          // printf(" The type could not be identified. Check vtk_support.c
+          // file"); printf("Number of elements is %d\n" , nnode_elem);
 
-                    // Assume quad
-                    add_quad(&elem[off], is_quad);
-                }
-            }
-            break;
-        case 4: // solid
-            /* printf("Adding solid "); */
-            if (elem[off + 6] != elem[off + 7]) { // hexahedral
-                /* printf(" subtype hexahedral\n"); */
-                add_hex(&elem[off], nnode_elem);
-            } else if (elem[off + 5] != elem[off + 6]) { // wedge
-                /* printf(" subtype wedge\n"); */
-                add_wedge(&elem[off], nnode_elem);
-            } else if (elem[off + 2] != elem[off + 3]) { // pyramid
-                /* printf(" subtype pyramid\n"); */
-                add_pyr(&elem[off], nnode_elem);
-            } else { // tetrahedral
-                     /* printf(" subtype tetrahedral\n"); */
-                add_tet(&elem[off], nnode_elem);
-            }
-            break;
-        case 5: // tetrahedral
-            /* printf("Adding tetrahedral\n"); */
-            add_tet10(&elem[off], nnode_elem);
-            break;
-        case 6: // linear line
-            add_line(&elem[off], false);
-            // should never reach here
-        } // end of switch
-    }     // end of loop
+          // Assume quad
+          add_quad(&elem[off], is_quad);
+        }
+      }
+      break;
+    case 4: // solid
+      /* printf("Adding solid "); */
+      if (elem[off + 6] != elem[off + 7]) { // hexahedral
+        /* printf(" subtype hexahedral\n"); */
+        add_hex(&elem[off], nnode_elem);
+      } else if (elem[off + 5] != elem[off + 6]) { // wedge
+        /* printf(" subtype wedge\n"); */
+        add_wedge(&elem[off], nnode_elem);
+      } else if (elem[off + 2] != elem[off + 3]) { // pyramid
+        /* printf(" subtype pyramid\n"); */
+        add_pyr(&elem[off], nnode_elem);
+      } else { // tetrahedral
+               /* printf(" subtype tetrahedral\n"); */
+        add_tet(&elem[off], nnode_elem);
+      }
+      break;
+    case 5: // tetrahedral
+      /* printf("Adding tetrahedral\n"); */
+      add_tet10(&elem[off], nnode_elem);
+      break;
+    case 6: // linear line
+      add_line(&elem[off], false);
+      // should never reach here
+    } // end of switch
+  }   // end of loop
 
-    /* printf("Done\n"); */
-    offset[nelem] = vtk_data.loc;
+  /* printf("Done\n"); */
+  offset[nelem] = vtk_data.loc;
 
-    free(nref);
-    return vtk_data.loc;
+  free(nref);
+  return vtk_data.loc;
 }
