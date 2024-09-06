@@ -20,6 +20,7 @@ using namespace nb::literals;
 
 /* We are on Windows */
 #if defined(_WIN32) || defined(_WIN64)
+#define NOMINMAX
 #define strtok_r strtok_s
 #include <windows.h>
 #else
