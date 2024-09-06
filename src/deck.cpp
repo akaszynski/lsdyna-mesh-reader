@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <iomanip>
 #include <iostream>
 #include <math.h>
 #include <sstream>
@@ -339,6 +340,41 @@ struct NodeSection {
     tc = WrapVectorAsNDArray(std::move(tc_vec), nnum_shape);
     rc = WrapVectorAsNDArray(std::move(rc_vec), nnum_shape);
   }
+
+  std::string ToString() const {
+    std::ostringstream oss;
+    int num_nodes = nnum.size();
+    if (num_nodes > 1) {
+      oss << "NodeSection containing " << num_nodes << " nodes\n\n";
+    } else {
+      oss << "NodeSection containing " << num_nodes << " node\n\n";
+    }
+
+    // Header
+    oss << "|  NID  |       X       |       Y       |       Z       |   tc   | "
+           "  rc   |\n";
+    oss << "|-------|---------------|---------------|---------------|--------|-"
+           "-------|\n";
+
+    // Output first 3 nodes in Fortran-like format
+    for (int i = 0; i < std::min(10, num_nodes); ++i) {
+      oss << std::setw(8) << nnum(i) << " " // Node ID (nnum)
+          << std::setw(15) << std::scientific << std::setprecision(8)
+          << nodes(i, 0) << " " // X
+          << std::setw(15) << std::scientific << std::setprecision(8)
+          << nodes(i, 1) << " " // Y
+          << std::setw(15) << std::scientific << std::setprecision(8)
+          << nodes(i, 2) << " "             // Z
+          << std::setw(8) << tc(i) << " "   // tc
+          << std::setw(8) << rc(i) << "\n"; // rc
+    }
+
+    if (num_nodes > 10) {
+      oss << "..." << std::endl;
+    }
+
+    return oss.str();
+  }
 };
 
 struct ElementSection {
@@ -347,11 +383,14 @@ struct ElementSection {
   NDArray<int, 1> node_ids;
   NDArray<int, 1> node_id_offsets;
 
+  ElementSection() {}
+
   ElementSection(std::vector<int> eid_vec, std::vector<int> pid_vec,
                  std::vector<int> node_ids_vec,
                  std::vector<int> node_id_offsets_vec) {
     std::array<int, 1> nel_shape = {static_cast<int>(eid_vec.size())};
-    std::array<int, 1> node_ids_shape = {static_cast<int>(node_ids_vec.size())};
+    std::array<int, 1> node_ids_shape = {
+        static_cast<int>(node_id_offsets_vec.back())};
     std::array<int, 1> node_ids_offsets_shape = {
         static_cast<int>(eid_vec.size() + 1)};
 
@@ -360,6 +399,48 @@ struct ElementSection {
     node_ids = WrapVectorAsNDArray(std::move(node_ids_vec), node_ids_shape);
     node_id_offsets = WrapVectorAsNDArray(std::move(node_id_offsets_vec),
                                           node_ids_offsets_shape);
+  }
+
+  std::string ToString() const {
+    std::ostringstream oss;
+    int num_elements = eid.size();
+
+    if (num_elements > 1) {
+      oss << "ElementSection containing " << num_elements << " elements\n\n";
+    } else {
+      oss << "ElementSection containing " << num_elements << " element\n\n";
+    }
+
+    // Header
+    oss << "|  EID  |  PID  |  N1   |  N2   |  N3   |  N4   |  N5   |  N6   |  "
+           "N7   |  N8   |\n";
+    oss << "|-------|-------|-------|-------|-------|-------|-------|-------|--"
+           "-----|-------|\n";
+
+    // Output first 10 elements (or less) in Fortran-like format
+    for (int i = 0; i < std::min(10, num_elements); ++i) {
+      // Print element ID and part ID
+      oss << std::setw(8) << eid(i) << ""  // EID
+          << std::setw(8) << pid(i) << ""; // PID
+
+      // Retrieve node IDs associated with this element
+      int start = node_id_offsets(i);
+      int end = node_id_offsets(i + 1);
+
+      // Print node IDs for the element
+      for (int j = start; j < end; ++j) {
+        oss << std::setw(8) << node_ids(j) << ""; // NODE_ID
+      }
+
+      oss << "\n";
+    }
+
+    // Add "..." if there are more than 10 elements
+    if (num_elements > 10) {
+      oss << "...\n";
+    }
+
+    return oss.str();
   }
 };
 
@@ -371,10 +452,6 @@ private:
   MemoryMappedFile memmap;
 
 public:
-  // int n_nodes = 0;
-  // int n_elem = 0;
-  // NDArray<double, 2> nodes_arr;
-
   std::vector<NodeSection> node_sections;
   std::vector<ElementSection> element_solid_sections;
 
@@ -507,12 +584,21 @@ public:
       // at the moment, we're making the assumption that the entire
       // element can be defined on this line
       eid.push_back(fast_atoi(memmap.current, 8));
+      memmap += 8;
       pid.push_back(fast_atoi(memmap.current, 8));
+      memmap += 8;
 
       // Is this always 8?
       for (int i = 0; i < 8; i++) {
         node_ids.push_back(fast_atoi(memmap.current, 8));
+        memmap += 8;
       }
+
+      // append end of node section (and start of next one) in our locator
+      node_id_offsets.push_back(node_ids.size());
+
+      // skip remainder of the line
+      memmap.seek_eol();
     }
 
     ElementSection *element_section =
@@ -526,6 +612,7 @@ public:
 NB_MODULE(_deck, m) {
   nb::class_<NodeSection>(m, "NodeSection")
       .def(nb::init())
+      .def("__repr__", &NodeSection::ToString)
       .def_ro("nodes", &NodeSection::nodes, nb::rv_policy::automatic)
       .def_ro("nnum", &NodeSection::nnum, nb::rv_policy::automatic)
       .def_ro("tc", &NodeSection::tc, nb::rv_policy::automatic)
@@ -533,6 +620,7 @@ NB_MODULE(_deck, m) {
 
   nb::class_<ElementSection>(m, "ElementSection")
       .def(nb::init())
+      .def("__repr__", &ElementSection::ToString)
       .def_ro("eid", &ElementSection::eid, nb::rv_policy::automatic)
       .def_ro("pid", &ElementSection::pid, nb::rv_policy::automatic)
       .def_ro("node_ids", &ElementSection::node_ids, nb::rv_policy::automatic)
