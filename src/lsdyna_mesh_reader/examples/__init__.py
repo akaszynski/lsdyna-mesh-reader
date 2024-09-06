@@ -19,6 +19,7 @@ dir_path = os.path.dirname(os.path.realpath(__file__))
 
 # https://www.dynaexamples.com/introduction/intro-by-a.-tabiei/contact/contact-eroding-i
 birdball = os.path.join(dir_path, "birdball.k")
+joint_screw = os.path.join(dir_path, "EXP_SC_JOINT_SCREW.key")
 
 __all__ = [
     "birdball",

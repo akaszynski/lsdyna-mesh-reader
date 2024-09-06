@@ -31,6 +31,7 @@ using namespace nb::literals;
 #endif
 
 #define NNUM_RESERVE 16384
+#define ENUM_RESERVE 16384
 
 static const double DIV_OF_TEN[] = {
     1.0e-0,  1.0e-1,  1.0e-2,  1.0e-3,  1.0e-4,  1.0e-5,  1.0e-6,
@@ -317,14 +318,17 @@ static inline int ans_strtod(char *raw, int fltsz,
   return 0;
 }
 
-struct NodeCard {
+struct NodeSection {
   NDArray<int, 1> nnum;
   NDArray<double, 2> nodes;
+  NDArray<int, 1> tc;
+  NDArray<int, 1> rc;
 
   // Default constructor
-  NodeCard() {}
+  NodeSection() {}
 
-  NodeCard(std::vector<int> nnum_vec, std::vector<double> nodes_vec) {
+  NodeSection(std::vector<int> nnum_vec, std::vector<double> nodes_vec,
+              std::vector<int> tc_vec, std::vector<int> rc_vec) {
     // Assuming the size of the vectors determines the shape of the arrays
     std::array<int, 1> nnum_shape = {static_cast<int>(nnum_vec.size())};
     std::array<int, 2> nodes_shape = {static_cast<int>(nnum_vec.size()), 3};
@@ -332,13 +336,36 @@ struct NodeCard {
     // Wrap vectors as NDArrays
     nnum = WrapVectorAsNDArray(std::move(nnum_vec), nnum_shape);
     nodes = WrapVectorAsNDArray(std::move(nodes_vec), nodes_shape);
+    tc = WrapVectorAsNDArray(std::move(tc_vec), nnum_shape);
+    rc = WrapVectorAsNDArray(std::move(rc_vec), nnum_shape);
+  }
+};
+
+struct ElementSection {
+  NDArray<int, 1> eid;
+  NDArray<int, 1> pid;
+  NDArray<int, 1> node_ids;
+  NDArray<int, 1> node_id_offsets;
+
+  ElementSection(std::vector<int> eid_vec, std::vector<int> pid_vec,
+                 std::vector<int> node_ids_vec,
+                 std::vector<int> node_id_offsets_vec) {
+    std::array<int, 1> nel_shape = {static_cast<int>(eid_vec.size())};
+    std::array<int, 1> node_ids_shape = {static_cast<int>(node_ids_vec.size())};
+    std::array<int, 1> node_ids_offsets_shape = {
+        static_cast<int>(eid_vec.size() + 1)};
+
+    eid = WrapVectorAsNDArray(std::move(eid_vec), nel_shape);
+    pid = WrapVectorAsNDArray(std::move(pid_vec), nel_shape);
+    node_ids = WrapVectorAsNDArray(std::move(node_ids_vec), node_ids_shape);
+    node_id_offsets = WrapVectorAsNDArray(std::move(node_id_offsets_vec),
+                                          node_ids_offsets_shape);
   }
 };
 
 class Deck {
 
 private:
-  // std::string line;
   bool debug;
   std::string filename;
   MemoryMappedFile memmap;
@@ -348,7 +375,8 @@ public:
   // int n_elem = 0;
   // NDArray<double, 2> nodes_arr;
 
-  std::vector<NodeCard> node_cards;
+  std::vector<NodeSection> node_sections;
+  std::vector<ElementSection> element_solid_sections;
 
   Deck(const std::string &fname) : filename(fname), memmap(fname.c_str()) {
 
@@ -386,18 +414,32 @@ public:
   // *NODE
   //        1-2.309401035E+00-2.309401035E+00-2.309401035E+00       0       0
   //        2-2.039600611E+00-2.039600611E+00-2.039600611E+00       0       0
-  void ReadNodeCard() {
+  void ReadNodeSection() {
     // Assumes that we have already read *NODE and are on the start of the
     // node information
 
-    // since we don't know the total number of nodes, we'll use a vector here
+    // Since we don't know the total number of nodes, we'll use vectors here,
+    // even though a malloc would be more efficient. Seems they don't store the
+    // total number of nodes per section.
     std::vector<int> nnum;
     nnum.reserve(NNUM_RESERVE);
     std::vector<double> nodes;
     nodes.reserve(NNUM_RESERVE * 3);
 
+    std::vector<int> tc;
+    tc.reserve(NNUM_RESERVE);
+
+    std::vector<int> rc;
+    rc.reserve(NNUM_RESERVE);
+
     int index = 0;
     while (memmap[0] != '*') {
+
+      // skip comments
+      if (memmap[0] == '$') {
+        memmap.seek_eol();
+      }
+
       // Read node num (assumes first 8 char)
       nnum.push_back(fast_atoi(memmap.current, 8));
       memmap += 8;
@@ -411,51 +453,97 @@ public:
       ans_strtod(memmap.current, 16, nodes);
       memmap += 16;
 
+      // constraints
+      tc.push_back(fast_atoi(memmap.current, 8));
+      memmap += 8;
+      rc.push_back(fast_atoi(memmap.current, 8));
+      memmap += 8;
+
       // skip remainder of the line
       memmap.seek_eol();
     }
 
-    NodeCard *node_card = new NodeCard(nnum, nodes);
-    node_cards.push_back(*node_card);
+    NodeSection *node_section = new NodeSection(nnum, nodes, tc, rc);
+    node_sections.push_back(*node_section);
 
     return;
+  }
+
+  // Read the section following the *ELEMENT_SECTION command
+  // EID PID NODE0 NODE1 ... NODE_N
+  // where:
+  //   EID: Element ID
+  //   PID: Part ID
+  //   NODE0: Index of node0
+  // ...
+  //
+  // Example
+  // *ELEMENT_SOLID
+  //       1       1       1       2       6       5      17      18      22 21
+  //       2       1       2       3       7       6      18      19      23 22
+  void ReadElementSolidSection() {
+    std::vector<int> eid;
+    eid.reserve(ENUM_RESERVE);
+
+    std::vector<int> pid;
+    pid.reserve(ENUM_RESERVE);
+
+    std::vector<int> node_ids;
+    node_ids.reserve(ENUM_RESERVE *
+                     20); // using 20, guessing most are 20 node hex or tet
+
+    // using compressed sparse row
+    std::vector<int> node_id_offsets;
+    node_id_offsets.reserve(ENUM_RESERVE);
+
+    int offset = 0;
+    node_id_offsets.push_back(0);
+    while (memmap[0] != '*') {
+      // skip comments
+      if (memmap[0] == '$') {
+        memmap.seek_eol();
+      }
+
+      // at the moment, we're making the assumption that the entire
+      // element can be defined on this line
+      eid.push_back(fast_atoi(memmap.current, 8));
+      pid.push_back(fast_atoi(memmap.current, 8));
+
+      // Is this always 8?
+      for (int i = 0; i < 8; i++) {
+        node_ids.push_back(fast_atoi(memmap.current, 8));
+      }
+    }
+
+    ElementSection *element_section =
+        new ElementSection(eid, pid, node_ids, node_id_offsets);
+    element_solid_sections.push_back(*element_section);
   }
 
   int ReadLine() { return memmap.read_line(); }
 };
 
 NB_MODULE(_deck, m) {
-  nb::class_<NodeCard>(m, "NodeCard")
+  nb::class_<NodeSection>(m, "NodeSection")
       .def(nb::init())
-      .def_ro("nodes", &NodeCard::nodes, nb::rv_policy::automatic)
-      .def_ro("nnum", &NodeCard::nnum, nb::rv_policy::automatic);
+      .def_ro("nodes", &NodeSection::nodes, nb::rv_policy::automatic)
+      .def_ro("nnum", &NodeSection::nnum, nb::rv_policy::automatic)
+      .def_ro("tc", &NodeSection::tc, nb::rv_policy::automatic)
+      .def_ro("rc", &NodeSection::rc, nb::rv_policy::automatic);
+
+  nb::class_<ElementSection>(m, "ElementSection")
+      .def(nb::init())
+      .def_ro("eid", &ElementSection::eid, nb::rv_policy::automatic)
+      .def_ro("pid", &ElementSection::pid, nb::rv_policy::automatic)
+      .def_ro("node_ids", &ElementSection::node_ids, nb::rv_policy::automatic)
+      .def_ro("node_id_offsets", &ElementSection::node_id_offsets,
+              nb::rv_policy::automatic);
 
   nb::class_<Deck>(m, "Deck")
       .def(nb::init<const std::string &>(), "fname"_a, "A LS-DYNA deck.")
-      // .def_ro("n_elem", &Deck::n_elem)
-      // .def_ro("elem_type", &Deck::elem_type)
-      // .def_ro("elem", &Deck::elem_arr, nb::rv_policy::automatic)
-      // .def_ro("elem_off", &Deck::elem_off_arr, nb::rv_policy::automatic)
-      // .def_ro("keyopt", &Deck::keyopt)
-      // .def_ro("rdat", &Deck::rdat)
-      // .def_ro("rnum", &Deck::rnum)
-      // .def_ro("elem_comps", &Deck::elem_comps, nb::rv_policy::automatic)
-      // .def_ro("node_comps", &Deck::node_comps, nb::rv_policy::automatic)
-      // .def_ro("nodes", &Deck::nodes_arr, nb::rv_policy::automatic)
-      // .def_ro("node_angles", &Deck::node_angles_arr,
-      // nb::rv_policy::automatic) .def_ro("nnum", &Deck::nnum_arr,
-      // nb::rv_policy::automatic)
-      .def_ro("node_cards", &Deck::node_cards)
-      // .def_ro("nblock_start", &Deck::nblock_start)
-      // .def_ro("nblock_end", &Deck::nblock_end)
-      // .def("to_vtk", &Deck::ToVTK)
-      // .def("read", &Deck::Read)
+      .def_ro("node_sections", &Deck::node_sections)
+      .def_ro("element_solid_sections", &Deck::element_solid_sections)
       .def("read_line", &Deck::ReadLine)
-      .def("read_node_card", &Deck::ReadNodeCard);
-  // .def("read_rlblock", &Deck::ReadRLBLOCK)
-  // .def("read_keyopt_line", &Deck::ReadKEYOPTLine)
-  // .def("read_et_line", &Deck::ReadETLine)
-  // .def("read_etblock", &Deck::ReadETBlock)
-  // .def("read_cmblock", &Deck::ReadCMBlock)
-  // .def("read_eblock", &Deck::ReadEBlock);
+      .def("read_element_section", &Deck::ReadElementSolidSection)
+      .def("read_node_section", &Deck::ReadNodeSection);
 }
