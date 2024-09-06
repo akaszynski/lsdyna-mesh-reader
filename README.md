@@ -32,6 +32,6 @@ example mesh and output the node coordinates as a numpy array
 ```py
 >>> import lsdyna_mesh_reader
 >>> from lsdyna_mesh_reader import examples
->>> reader = lsdyna_mesh_reader.Reader(examples.birdball)
->>> reader.nodes
+>>> deck = lsdyna_mesh_reader.Deck(examples.birdball)
+>>> deck.nodes
 ```

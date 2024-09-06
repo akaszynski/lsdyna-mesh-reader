@@ -11,21 +11,21 @@ find_package(Python 3.8
 # Import nanobind through CMake's find_package mechanism
 find_package(nanobind CONFIG REQUIRED)
 
-nanobind_add_module(_reader STABLE_ABI NB_STATIC src/reader.cpp src/vtk_support.cpp)
+nanobind_add_module(_deck STABLE_ABI NB_STATIC src/deck.cpp)
 
 # Compiler-specific options
 if(MSVC)
   # Use MSVC optimization levels and OpenMP setup
-  target_compile_options(_reader PRIVATE /O2 /std:c++17)
+  target_compile_options(_deck PRIVATE /O2 /std:c++17)
 else()
   # Assuming GCC or Clang
-  target_compile_options(_reader PRIVATE -O3)
+  target_compile_options(_deck PRIVATE -O3)
 endif()
 
 # Example debugging
 # set solib-search-path /home/user/python/.venv311/lib/python3.11/site-packages/lsdyna_mesh_reader/
-# set breakpoint with b _reader.cpp:<LINE_NUMBER>
-# target_compile_options(_reader PRIVATE -g -O0)
+# set breakpoint with b _deck.cpp:<LINE_NUMBER>
+# target_compile_options(_deck PRIVATE -g -O0)
 
 # Install directive for scikit-build-core
-install(TARGETS _reader LIBRARY DESTINATION lsdyna_mesh_reader)
+install(TARGETS _deck LIBRARY DESTINATION lsdyna_mesh_reader)

@@ -1,20 +1,16 @@
-"""MAPDL archive reader."""
+"""LS-DYNA mesh reader."""
 
 from importlib.metadata import PackageNotFoundError, version
 
-from mapdl_archive import examples
-from mapdl_archive.archive import (
-    Archive,
-    save_as_archive,
-    write_cmblock,
-    write_nblock,
-)
+from lsdyna_mesh_reader import examples
+
+# from lsdyna_mesh_reader.deck import Deck
 
 # get current version from the package metadata
 try:
-    __version__ = version("mapdl_archive")
+    __version__ = version("lsdyna_mesh_reader")
 except PackageNotFoundError:
     __version__ = "unknown"
 
 
-__all__ = ["Archive", "save_as_archive", "write_cmblock", "write_nblock", "examples", "__version__"]
+__all__ = ["examples", "Deck"]
