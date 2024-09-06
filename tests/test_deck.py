@@ -61,14 +61,14 @@ def test_node_section(tmp_path: Path) -> None:
     assert np.allclose(node_section.rc, [0, 3, 4, 0, 0])
 
 
-def test_element_section(tmp_path: Path) -> None:
+def test_element_solid_section(tmp_path: Path) -> None:
     filename = str(tmp_path / "tmp.k")
     with open(filename, "w") as fid:
         fid.write(ELEMENT_SECTION)
 
     deck = Deck(filename)
     deck.read_line()
-    deck.read_element_section()
+    deck.read_element_solid_section()
 
     assert len(deck.element_solid_sections) == 1
     element_section = deck.element_solid_sections[0]
@@ -81,3 +81,25 @@ def test_element_section(tmp_path: Path) -> None:
 
     offsets = np.cumsum([0] + [len(element) for element in ELEMENT_SECTION_ELEMS])
     assert np.allclose(element_section.node_id_offsets, offsets)
+
+
+# def test_element_beam_section(tmp_path: Path) -> None:
+#     filename = str(tmp_path / "tmp.k")
+#     with open(filename, "w") as fid:
+#         fid.write(ELEMENT_SECTION)
+
+#     deck = Deck(filename)
+#     deck.read_line()
+#     deck.read_element_beam_section()
+
+#     assert len(deck.element_beam_sections) == 1
+#     element_section = deck.element_beam_sections[0]
+
+#     assert "ElementBeam containing 5 elements" in str(element_section)
+
+#     assert np.allclose(element_section.eid, range(1, 6))
+#     assert np.allclose(element_section.pid, [1] * 5)
+#     assert np.allclose(element_section.node_ids, np.array(ELEMENT_SECTION_ELEMS).ravel())
+
+#     offsets = np.cumsum([0] + [len(element) for element in ELEMENT_SECTION_ELEMS])
+#     assert np.allclose(element_section.node_id_offsets, offsets)

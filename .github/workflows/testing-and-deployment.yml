@@ -29,7 +29,7 @@ jobs:
 
     - uses: actions/upload-artifact@v4
       with:
-        name: mapdl-archive-wheels-${{ matrix.os }}
+        name: lsdyna-mesh-reader-wheels-${{ matrix.os }}
         path: ./wheelhouse/*.whl
 
   build_sdist:
@@ -46,7 +46,7 @@ jobs:
       run: pipx run build --sdist
 
     - name: Install from sdist
-      run: pip install dist/mapdl*.tar.gz
+      run: pip install dist/lsdyna*.tar.gz
 
     - name: Run tests
       run: |
@@ -55,7 +55,7 @@ jobs:
 
     - uses: actions/upload-artifact@v4
       with:
-        name: mapdl-archive-sdist
+        name: lsdyna-mesh-reader-sdist
         path: dist/*.tar.gz
 
   release:

@@ -7,13 +7,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unordered_map>
 #include <vector>
 
 #include <nanobind/nanobind.h>
 #include <nanobind/ndarray.h>
 #include <nanobind/stl/string.h>
-#include <nanobind/stl/unordered_map.h>
 #include <nanobind/stl/vector.h>
 
 #include "array_support.h"
@@ -33,6 +31,8 @@ using namespace nb::literals;
 
 #define NNUM_RESERVE 16384
 #define ENUM_RESERVE 16384
+
+struct ElementSection;
 
 static const double DIV_OF_TEN[] = {
     1.0e-0,  1.0e-1,  1.0e-2,  1.0e-3,  1.0e-4,  1.0e-5,  1.0e-6,
@@ -632,6 +632,7 @@ NB_MODULE(_deck, m) {
       .def_ro("node_sections", &Deck::node_sections)
       .def_ro("element_solid_sections", &Deck::element_solid_sections)
       .def("read_line", &Deck::ReadLine)
-      .def("read_element_section", &Deck::ReadElementSolidSection)
+      .def("read_element_solid_section", &Deck::ReadElementSolidSection)
+      // .def("read_element_beam_section", &Deck::ReadElementBeamSection)
       .def("read_node_section", &Deck::ReadNodeSection);
 }
