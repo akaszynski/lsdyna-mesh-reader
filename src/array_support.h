@@ -2,6 +2,7 @@
 #define ARRAY_SUPPORT_HEADER_H
 
 #include <array>
+#include <vector>
 
 #include <nanobind/nanobind.h>
 #include <nanobind/ndarray.h>
@@ -72,6 +73,38 @@ NDArray<T, N> MakeNDArray(const std::array<int, N> shape,
   } else {
     return NDArray<T, N>(data, N, shape_, nullptr);
   }
+}
+
+// Wrap an existing vector as a numpy ndarray
+template <typename T, size_t N>
+NDArray<T, N> WrapVectorAsNDArray(std::vector<T> &&vec,
+                                  const std::array<int, N> shape) {
+  // Ensure the shape product matches the vector size
+  size_t total = 1;
+  for (size_t i = 0; i < N; ++i) {
+    total *= shape[i];
+  }
+  if (total != vec.size()) {
+    throw std::invalid_argument(
+        "Shape does not match the number of elements in vector");
+  }
+
+  T *data_ptr = vec.data(); // Capture the pointer before moving the vector
+  std::vector<T> *raw_ptr =
+      new std::vector<T>(std::move(vec)); // Move the vector to the heap
+
+  // Use nanobind's capsule to manage vector's memory
+  nb::capsule owner(raw_ptr, [](void *p) noexcept {
+    delete static_cast<std::vector<T> *>(p);
+  });
+
+  size_t shape_[N];
+  for (size_t i = 0; i < N; i++) {
+    shape_[i] = shape[i];
+  }
+
+  // Create NDArray
+  return NDArray<T, N>(data_ptr, N, shape_, owner);
 }
 
 #endif // ARRAY_SUPPORT_HEADER_H

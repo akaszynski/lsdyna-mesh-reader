@@ -1,6 +1,6 @@
 """LS-DYNA examples module.
 
-Content reused based on the following implicit free to use license from
+Content reused based on the following implicit open to use license from
 https://www.dynaexamples.com/
 
     The input files and several class notes are available for download. The
