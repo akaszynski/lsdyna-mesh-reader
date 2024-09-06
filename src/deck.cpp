@@ -32,8 +32,6 @@ using namespace nb::literals;
 #define NNUM_RESERVE 16384
 #define ENUM_RESERVE 16384
 
-struct ElementSection;
-
 static const double DIV_OF_TEN[] = {
     1.0e-0,  1.0e-1,  1.0e-2,  1.0e-3,  1.0e-4,  1.0e-5,  1.0e-6,
     1.0e-7,  1.0e-8,  1.0e-9,  1.0e-10, 1.0e-11, 1.0e-12, 1.0e-13,
@@ -382,6 +380,7 @@ struct ElementSection {
   NDArray<int, 1> pid;
   NDArray<int, 1> node_ids;
   NDArray<int, 1> node_id_offsets;
+  std::string name = "ElementSection";
 
   ElementSection() {}
 
@@ -406,9 +405,9 @@ struct ElementSection {
     int num_elements = eid.size();
 
     if (num_elements > 1) {
-      oss << "ElementSection containing " << num_elements << " elements\n\n";
+      oss << name << " containing " << num_elements << " elements\n\n";
     } else {
-      oss << "ElementSection containing " << num_elements << " element\n\n";
+      oss << name << " containing " << num_elements << " element\n\n";
     }
 
     // Header
@@ -444,6 +443,28 @@ struct ElementSection {
   }
 };
 
+struct ElementSolidSection : public ElementSection {
+  ElementSolidSection() : ElementSection() {}
+
+  ElementSolidSection(std::vector<int> eid_vec, std::vector<int> pid_vec,
+                      std::vector<int> node_ids_vec,
+                      std::vector<int> node_id_offsets_vec)
+      : ElementSection(eid_vec, pid_vec, node_ids_vec, node_id_offsets_vec) {
+    name = "ElementSolidSection";
+  }
+};
+
+struct ElementShellSection : public ElementSection {
+  ElementShellSection() : ElementSection() {}
+
+  ElementShellSection(std::vector<int> eid_vec, std::vector<int> pid_vec,
+                      std::vector<int> node_ids_vec,
+                      std::vector<int> node_id_offsets_vec)
+      : ElementSection(eid_vec, pid_vec, node_ids_vec, node_id_offsets_vec) {
+    name = "ElementShellSection";
+  }
+};
+
 class Deck {
 
 private:
@@ -453,7 +474,8 @@ private:
 
 public:
   std::vector<NodeSection> node_sections;
-  std::vector<ElementSection> element_solid_sections;
+  std::vector<ElementSolidSection> element_solid_sections;
+  std::vector<ElementShellSection> element_shell_sections;
 
   Deck(const std::string &fname) : filename(fname), memmap(fname.c_str()) {
 
@@ -546,6 +568,47 @@ public:
     return;
   }
 
+  template <typename T> T ReadElementSection(int num_nodes) {
+    std::vector<int> eid;
+    eid.reserve(ENUM_RESERVE);
+
+    std::vector<int> pid;
+    pid.reserve(ENUM_RESERVE);
+
+    std::vector<int> node_ids;
+    node_ids.reserve(ENUM_RESERVE * 20); // using 20 as an upper guess
+
+    std::vector<int> node_id_offsets;
+    node_id_offsets.reserve(ENUM_RESERVE);
+
+    int offset = 0;
+    node_id_offsets.push_back(0);
+    while (memmap[0] != '*') {
+      if (memmap[0] == '$') {
+        memmap.seek_eol();
+        continue;
+      }
+
+      eid.push_back(fast_atoi(memmap.current, 8));
+      memmap += 8;
+      pid.push_back(fast_atoi(memmap.current, 8));
+      memmap += 8;
+
+      // Read the specified number of nodes
+      for (int i = 0; i < num_nodes; i++) {
+        node_ids.push_back(fast_atoi(memmap.current, 8));
+        memmap += 8;
+      }
+
+      node_id_offsets.push_back(node_ids.size());
+
+      memmap.seek_eol();
+    }
+
+    T *element_section = new T(eid, pid, node_ids, node_id_offsets);
+    return *element_section;
+  }
+
   // Read the section following the *ELEMENT_SECTION command
   // EID PID NODE0 NODE1 ... NODE_N
   // where:
@@ -559,51 +622,13 @@ public:
   //       1       1       1       2       6       5      17      18      22 21
   //       2       1       2       3       7       6      18      19      23 22
   void ReadElementSolidSection() {
-    std::vector<int> eid;
-    eid.reserve(ENUM_RESERVE);
+    element_solid_sections.push_back(
+        ReadElementSection<ElementSolidSection>(8));
+  }
 
-    std::vector<int> pid;
-    pid.reserve(ENUM_RESERVE);
-
-    std::vector<int> node_ids;
-    node_ids.reserve(ENUM_RESERVE *
-                     20); // using 20, guessing most are 20 node hex or tet
-
-    // using compressed sparse row
-    std::vector<int> node_id_offsets;
-    node_id_offsets.reserve(ENUM_RESERVE);
-
-    int offset = 0;
-    node_id_offsets.push_back(0);
-    while (memmap[0] != '*') {
-      // skip comments
-      if (memmap[0] == '$') {
-        memmap.seek_eol();
-      }
-
-      // at the moment, we're making the assumption that the entire
-      // element can be defined on this line
-      eid.push_back(fast_atoi(memmap.current, 8));
-      memmap += 8;
-      pid.push_back(fast_atoi(memmap.current, 8));
-      memmap += 8;
-
-      // Is this always 8?
-      for (int i = 0; i < 8; i++) {
-        node_ids.push_back(fast_atoi(memmap.current, 8));
-        memmap += 8;
-      }
-
-      // append end of node section (and start of next one) in our locator
-      node_id_offsets.push_back(node_ids.size());
-
-      // skip remainder of the line
-      memmap.seek_eol();
-    }
-
-    ElementSection *element_section =
-        new ElementSection(eid, pid, node_ids, node_id_offsets);
-    element_solid_sections.push_back(*element_section);
+  void ReadElementShellSection() {
+    element_shell_sections.push_back(
+        ReadElementSection<ElementShellSection>(4));
   }
 
   int ReadLine() { return memmap.read_line(); }
@@ -618,21 +643,33 @@ NB_MODULE(_deck, m) {
       .def_ro("tc", &NodeSection::tc, nb::rv_policy::automatic)
       .def_ro("rc", &NodeSection::rc, nb::rv_policy::automatic);
 
-  nb::class_<ElementSection>(m, "ElementSection")
+  nb::class_<ElementSolidSection>(m, "ElementSolidSection")
       .def(nb::init())
-      .def("__repr__", &ElementSection::ToString)
-      .def_ro("eid", &ElementSection::eid, nb::rv_policy::automatic)
-      .def_ro("pid", &ElementSection::pid, nb::rv_policy::automatic)
-      .def_ro("node_ids", &ElementSection::node_ids, nb::rv_policy::automatic)
-      .def_ro("node_id_offsets", &ElementSection::node_id_offsets,
+      .def("__repr__", &ElementSolidSection::ToString)
+      .def_ro("eid", &ElementSolidSection::eid, nb::rv_policy::automatic)
+      .def_ro("pid", &ElementSolidSection::pid, nb::rv_policy::automatic)
+      .def_ro("node_ids", &ElementSolidSection::node_ids,
+              nb::rv_policy::automatic)
+      .def_ro("node_id_offsets", &ElementSolidSection::node_id_offsets,
+              nb::rv_policy::automatic);
+
+  nb::class_<ElementShellSection>(m, "ElementShellSection")
+      .def(nb::init())
+      .def("__repr__", &ElementShellSection::ToString)
+      .def_ro("eid", &ElementShellSection::eid, nb::rv_policy::automatic)
+      .def_ro("pid", &ElementShellSection::pid, nb::rv_policy::automatic)
+      .def_ro("node_ids", &ElementShellSection::node_ids,
+              nb::rv_policy::automatic)
+      .def_ro("node_id_offsets", &ElementShellSection::node_id_offsets,
               nb::rv_policy::automatic);
 
   nb::class_<Deck>(m, "Deck")
       .def(nb::init<const std::string &>(), "fname"_a, "A LS-DYNA deck.")
       .def_ro("node_sections", &Deck::node_sections)
       .def_ro("element_solid_sections", &Deck::element_solid_sections)
+      .def_ro("element_shell_sections", &Deck::element_shell_sections)
       .def("read_line", &Deck::ReadLine)
       .def("read_element_solid_section", &Deck::ReadElementSolidSection)
-      // .def("read_element_beam_section", &Deck::ReadElementBeamSection)
+      .def("read_element_shell_section", &Deck::ReadElementShellSection)
       .def("read_node_section", &Deck::ReadNodeSection);
 }
