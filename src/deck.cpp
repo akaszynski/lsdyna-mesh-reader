@@ -588,7 +588,7 @@ struct ElementShellSection : public ElementSection {
     int c = 0;
     offsets[0] = 0;
     uint8_t celltype = VTK_EMPTY_CELL;
-    for (int i; i < n_elem; i++) {
+    for (int i = 0; i < n_elem; i++) {
       // determine if the cell is a quad or triangle
       int offset = node_id_offsets_data[i];
       if (node_ids_data[offset + 2] == node_ids_data[offset + 3]) {
