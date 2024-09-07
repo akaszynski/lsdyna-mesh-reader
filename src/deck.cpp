@@ -505,31 +505,55 @@ struct ElementSolidSection : public ElementSection {
   // convert cells, offset, and celltypes to vtk style arrays
   nb::tuple ToVTK() {
     NDArray<uint8_t, 1> celltypes_arr = MakeNDArray<uint8_t, 1>({(int)n_elem});
-    // NDArray<int64_t, 1> offsets_arr = MakeNDArray<int64_t, 1>({(int)(n_elem +
-    // 1)}); NDArray<int64_t, 1> cells_arr = MakeNDArray<int64_t,
-    // 1>({(int)node_ids.size()});
+    NDArray<int64_t, 1> offsets_arr =
+        MakeNDArray<int64_t, 1>({(int)(n_elem + 1)});
 
     uint8_t *celltypes = celltypes_arr.data();
-    // int64_t *offsets = offsets_arr.data();
-    // int64_t *cells = cells_arr.data();
+    int64_t *offsets = offsets_arr.data();
+    int64_t *cells = AllocateArray<int64_t>(node_ids.size());
 
     const int *node_id_offsets_data = node_id_offsets.data();
     const int *node_ids_data = node_ids.data();
 
     int c = 0;
-    // offsets[0] = 0;
+    offsets[0] = 0;
     uint8_t celltype = VTK_EMPTY_CELL;
     for (int i; i < n_elem; i++) {
-      // int offset = node_id_offsets_data[i];
-      // int el_sz = 8;  // assuming hex
-      celltypes[i] = VTK_HEXAHEDRON;
-      // offsets[i + 1] = offsets[i] + el_sz; // start of next cell
-      // for (int j=0; j< el_sz; j++){
-      //     cells[c++] = node_ids_data[offset + j];
-      // }
+
+      int el_sz = 0;
+      int offset = node_id_offsets_data[i];
+      if (node_ids_data[offset + 3] == node_ids_data[offset + 4]) {
+        celltypes[i] = VTK_TETRA;
+        cells[c++] = node_ids_data[offset + 0];
+        cells[c++] = node_ids_data[offset + 1];
+        cells[c++] = node_ids_data[offset + 2];
+        cells[c++] = node_ids_data[offset + 3];
+        el_sz = 4;
+      } else if (node_ids_data[offset + 5] == node_ids_data[offset + 6]) {
+        celltypes[i] = VTK_WEDGE;
+        // map to vtk style
+        cells[c++] = node_ids_data[offset + 0];
+        cells[c++] = node_ids_data[offset + 1];
+        cells[c++] = node_ids_data[offset + 4];
+        cells[c++] = node_ids_data[offset + 3];
+        cells[c++] = node_ids_data[offset + 2];
+        cells[c++] = node_ids_data[offset + 5];
+        el_sz = 6;
+      } else {
+        celltypes[i] = VTK_HEXAHEDRON;
+        // assuming compiler is smart enough to unroll this
+        for (int j = 0; j < 8; j++) {
+          cells[c++] = node_ids_data[offset + j];
+        }
+        el_sz = 8;
+      } // cell type branching
+
+      offsets[i + 1] = offsets[i] + el_sz; // start of next cell
+
     } // for each cell
 
-    return nb::make_tuple(node_ids, node_id_offsets, celltypes_arr);
+    NDArray<int64_t, 1> cells_arr = WrapNDarray<int64_t, 1>(cells, {c});
+    return nb::make_tuple(cells_arr, offsets_arr, celltypes_arr);
   } // to vtk
 };
 
@@ -563,8 +587,6 @@ struct ElementShellSection : public ElementSection {
     for (int i; i < n_elem; i++) {
       // determine if the cell is a quad or triangle
       int offset = node_id_offsets_data[i];
-      // int el_sz = node_id_offsets_data[i+1] - offset;
-      // if (el_sz == 4){
       if (node_ids_data[offset + 2] == node_ids_data[offset + 3]) {
         celltypes[i] = VTK_TRIANGLE;
         el_sz = 3;
@@ -572,9 +594,6 @@ struct ElementShellSection : public ElementSection {
         celltypes[i] = VTK_QUAD;
         el_sz = 4;
       }
-      // } else {
-      //     throw std::runtime_error("Unsupported shell cell size");
-      // }
 
       offsets[i + 1] = offsets[i] + el_sz; // start of next cell
       for (int j = 0; j < el_sz; j++) {

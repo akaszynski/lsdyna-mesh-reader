@@ -28,19 +28,15 @@ NODE_SECTION_NODES_EXPECTED = np.array(
 
 ELEMENT_SOLID_SECTION = """*ELEMENT_SOLID
        1       1       1       2       6       5      17      18      22      21
-       2       1       2       3       7       6      18      19      23      22
-       3       1       3       4       8       7      19      20      24      23
-       4       1       5       6      10       9      21      22      26      25
-       5       1       6       7      11      10      22      23      27      26
+       2       1       5       6      10       9       9       9       9       9
+       3       1       6       7      11      10      22      23      23      23
 *END
 """
 
 ELEMENT_SOLID_SECTION_ELEMS = [
     [1, 2, 6, 5, 17, 18, 22, 21],
-    [2, 3, 7, 6, 18, 19, 23, 22],
-    [3, 4, 8, 7, 19, 20, 24, 23],
-    [5, 6, 10, 9, 21, 22, 26, 25],
-    [6, 7, 11, 10, 22, 23, 27, 26],
+    [5, 6, 10, 9, 9, 9, 9, 9],
+    [6, 7, 11, 10, 22, 23, 23, 23],
 ]
 
 
@@ -93,16 +89,23 @@ def test_element_solid_section(tmp_path: Path) -> None:
 
     assert len(deck.element_solid_sections) == 1
     section = deck.element_solid_sections[0]
-    assert "ElementSolidSection containing 5 elements" in str(section)
+    assert "ElementSolidSection containing 3 elements" in str(section)
 
-    assert np.allclose(section.eid, range(1, 6))
-    assert np.allclose(section.pid, [1] * 5)
+    assert np.allclose(section.eid, range(1, 4))
+    assert np.allclose(section.pid, [1] * 3)
     assert np.allclose(section.node_ids, np.array(ELEMENT_SOLID_SECTION_ELEMS).ravel())
 
     cells, offset, celltypes = section.to_vtk()
-    assert np.allclose(cells, section.node_ids)  # expect no change
-    assert np.allclose(offset, section.node_id_offsets)  # expect no change
-    assert np.allclose(celltypes, [pv.CellType.HEXAHEDRON] * 5)
+    expected_cells = np.hstack(
+        [
+            ELEMENT_SOLID_SECTION_ELEMS[0],  # hex
+            ELEMENT_SOLID_SECTION_ELEMS[1][:4],  # tet
+            [6, 7, 22, 10, 11, 23],  # remapped to vtk style wedge
+        ]
+    )
+    assert np.allclose(cells, expected_cells)
+    assert np.allclose(offset, [0, 8, 12, 18])
+    assert np.allclose(celltypes, [pv.CellType.HEXAHEDRON, pv.CellType.TETRA, pv.CellType.WEDGE])
 
     offsets = np.cumsum([0] + [len(element) for element in ELEMENT_SOLID_SECTION_ELEMS])
     assert np.allclose(section.node_id_offsets, offsets)
