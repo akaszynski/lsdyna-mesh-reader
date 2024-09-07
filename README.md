@@ -169,8 +169,7 @@ PyVista. For example, you could plot the resulting mesh. Here's a full example u
 >>> grid.plot(color="w", smooth_shading=True, show_edges=True)
 ```
 
-![Yaris Static Suspension Mesh](https://github.com/akaszynski/lsdyna-mesh-reader/blob/main/docs/yaris-mesh.png)
-
+![Yaris Static Suspension Mesh](https://github.com/akaszynski/lsdyna-mesh-reader/blob/main/docs/source/images/yaris-mesh.png)
 
 ### Caveats and Limitations
 
