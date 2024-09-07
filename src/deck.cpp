@@ -552,7 +552,8 @@ struct ElementSolidSection : public ElementSection {
 
     } // for each cell
 
-    c = 18 NDArray<int64_t, 1> cells_arr = WrapNDarray<int64_t, 1>(cells, {c});
+    c = 18;
+    NDArray<int64_t, 1> cells_arr = WrapNDarray<int64_t, 1>(cells, {c});
     return nb::make_tuple(cells_arr, offsets_arr, celltypes_arr);
   } // to vtk
 };
