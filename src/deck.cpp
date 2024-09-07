@@ -552,6 +552,7 @@ struct ElementSolidSection : public ElementSection {
 
     } // for each cell
 
+    std::cout << "cell array size: " << c << std::endl;
     NDArray<int64_t, 1> cells_arr = WrapNDarray<int64_t, 1>(cells, {c});
     return nb::make_tuple(cells_arr, offsets_arr, celltypes_arr);
   } // to vtk
@@ -865,7 +866,7 @@ NB_MODULE(_deck, m) {
       .def(nb::init())
       .def("__repr__", &ElementSolidSection::ToString)
       .def("__len__", &ElementSolidSection::Length)
-      .def("to_vtk", &ElementSolidSection::ToVTK, nb::rv_policy::automatic)
+      .def("to_vtk", &ElementSolidSection::ToVTK)
       .def_ro("eid", &ElementSolidSection::eid, nb::rv_policy::automatic)
       .def_ro("pid", &ElementSolidSection::pid, nb::rv_policy::automatic)
       .def_ro("node_ids", &ElementSolidSection::node_ids,
@@ -877,7 +878,7 @@ NB_MODULE(_deck, m) {
       .def(nb::init())
       .def("__repr__", &ElementShellSection::ToString)
       .def("__len__", &ElementShellSection::Length)
-      .def("to_vtk", &ElementShellSection::ToVTK, nb::rv_policy::automatic)
+      .def("to_vtk", &ElementShellSection::ToVTK)
       .def_ro("eid", &ElementShellSection::eid, nb::rv_policy::automatic)
       .def_ro("pid", &ElementShellSection::pid, nb::rv_policy::automatic)
       .def_ro("node_ids", &ElementShellSection::node_ids,
