@@ -1,5 +1,7 @@
 from pathlib import Path
+
 import numpy as np
+import pyvista as pv
 
 import lsdyna_mesh_reader
 from lsdyna_mesh_reader._deck import _Deck
@@ -47,7 +49,7 @@ ELEMENT_SHELL_SECTION = """*ELEMENT_SHELL
        2       2     378     389     390     379
        3       2     379     390     391     380
        4       2     380     391     392     381
-       5       2     381     392     393     382
+       5       2     381     392     393     393
 *END
 """
 
@@ -56,7 +58,7 @@ ELEMENT_SHELL_SECTION_ELEMS = [
     [378, 389, 390, 379],
     [379, 390, 391, 380],
     [380, 391, 392, 381],
-    [381, 392, 393, 382],
+    [381, 392, 393, 393],
 ]
 
 
@@ -90,16 +92,20 @@ def test_element_solid_section(tmp_path: Path) -> None:
     deck.read_element_solid_section()
 
     assert len(deck.element_solid_sections) == 1
-    element_section = deck.element_solid_sections[0]
+    section = deck.element_solid_sections[0]
+    assert "ElementSolidSection containing 5 elements" in str(section)
 
-    assert "ElementSolidSection containing 5 elements" in str(element_section)
+    assert np.allclose(section.eid, range(1, 6))
+    assert np.allclose(section.pid, [1] * 5)
+    assert np.allclose(section.node_ids, np.array(ELEMENT_SOLID_SECTION_ELEMS).ravel())
 
-    assert np.allclose(element_section.eid, range(1, 6))
-    assert np.allclose(element_section.pid, [1] * 5)
-    assert np.allclose(element_section.node_ids, np.array(ELEMENT_SOLID_SECTION_ELEMS).ravel())
+    cells, offset, celltypes = section.to_vtk()
+    assert np.allclose(cells, section.node_ids)  # expect no change
+    assert np.allclose(offset, section.node_id_offsets)  # expect no change
+    assert np.allclose(celltypes, [pv.CellType.HEXAHEDRON] * 5)
 
     offsets = np.cumsum([0] + [len(element) for element in ELEMENT_SOLID_SECTION_ELEMS])
-    assert np.allclose(element_section.node_id_offsets, offsets)
+    assert np.allclose(section.node_id_offsets, offsets)
 
 
 def test_element_shell_section(tmp_path: Path) -> None:
@@ -112,16 +118,23 @@ def test_element_shell_section(tmp_path: Path) -> None:
     deck.read_element_shell_section()
 
     assert len(deck.element_shell_sections) == 1
-    element_section = deck.element_shell_sections[0]
+    section = deck.element_shell_sections[0]
 
-    assert "ElementShellSection containing 5 elements" in str(element_section)
+    assert "ElementShellSection containing 5 elements" in str(section)
 
-    assert np.allclose(element_section.eid, range(1, 6))
-    assert np.allclose(element_section.pid, [2] * 5)
-    assert np.allclose(element_section.node_ids, np.array(ELEMENT_SHELL_SECTION_ELEMS).ravel())
+    assert np.allclose(section.eid, range(1, 6))
+    assert np.allclose(section.pid, [2] * 5)
+    assert np.allclose(section.node_ids, np.array(ELEMENT_SHELL_SECTION_ELEMS).ravel())
+
+    cells, offset, celltypes = section.to_vtk()
+    assert np.allclose(cells, section.node_ids[:-1])  # last excluded as it's a triangle
+    offsets_expected = section.node_id_offsets.copy()
+    offsets_expected[-1] -= 1
+    assert np.allclose(offset, offsets_expected)
+    assert np.allclose(celltypes, [pv.CellType.QUAD] * 4 + [pv.CellType.TRIANGLE])
 
     offsets = np.cumsum([0] + [len(element) for element in ELEMENT_SHELL_SECTION_ELEMS])
-    assert np.allclose(element_section.node_id_offsets, offsets)
+    assert np.allclose(section.node_id_offsets, offsets)
 
 
 def test_read_birdball() -> None:

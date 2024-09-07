@@ -30,10 +30,28 @@ using namespace nb::literals;
 #include <unistd.h>
 #endif
 
-#define DEBUG
+// #define DEBUG
 
 #define NNUM_RESERVE 16384
 #define ENUM_RESERVE 16384
+
+// VTK cell types
+uint8_t VTK_EMPTY_CELL = 0;
+uint8_t VTK_VERTEX = 1;
+uint8_t VTK_LINE = 3;
+uint8_t VTK_TRIANGLE = 5;
+uint8_t VTK_QUAD = 9;
+uint8_t VTK_QUADRATIC_TRIANGLE = 22;
+uint8_t VTK_QUADRATIC_QUAD = 23;
+uint8_t VTK_HEXAHEDRON = 12;
+uint8_t VTK_PYRAMID = 14;
+uint8_t VTK_TETRA = 10;
+uint8_t VTK_WEDGE = 13;
+uint8_t VTK_QUADRATIC_EDGE = 21;
+uint8_t VTK_QUADRATIC_TETRA = 24;
+uint8_t VTK_QUADRATIC_PYRAMID = 27;
+uint8_t VTK_QUADRATIC_WEDGE = 26;
+uint8_t VTK_QUADRATIC_HEXAHEDRON = 25;
 
 static const double DIV_OF_TEN[] = {
     1.0e-0,  1.0e-1,  1.0e-2,  1.0e-3,  1.0e-4,  1.0e-5,  1.0e-6,
@@ -240,10 +258,14 @@ static inline int fast_atoi(const char *raw, const int intsz) {
 // "        -6.01203 "
 //
 // fltsz : Number of characters to read in a floating point number
-static inline int ans_strtod(char *raw, int fltsz,
-                             std::vector<double> &node_vec) {
+static inline void ans_strtod(char *raw, int fltsz,
+                              std::vector<double> &node_vec) {
   char *end = raw + fltsz;
   double sign = 1;
+
+#ifdef DEBUG
+  std::cout << "ans_strtod called, " << std::endl;
+#endif
 
   // skip whitespace
   while (raw < end) {
@@ -260,18 +282,23 @@ static inline int ans_strtod(char *raw, int fltsz,
   }
 
   // next value is always a number
-  // Use integer arithmetric and then convert to a float
+  // Use integer arithmetric and store as int. We'll convert later
   uint64_t val_int = *raw++ - '0';
-  raw++; // next value is always a "."
 
   // Read through the rest of the number
   int decimal_digits = 0;
+  bool after_decimal = false;
   while (raw < end) {
-    if (*raw == 'e' || *raw == 'E') { // incredibly, can be lowercase
+    if (*raw == 'e' || *raw == 'E') { // can be lowercase
       break;
     } else if (*raw >= '0' && *raw <= '9') {
       val_int = val_int * 10 + (*raw++ - '0');
-      decimal_digits++;
+      if (after_decimal) {
+        decimal_digits++;
+      }
+    } else if (*raw == '.') {
+      after_decimal = true;
+      raw++;
     }
   }
 
@@ -295,6 +322,7 @@ static inline int ans_strtod(char *raw, int fltsz,
     }
     raw++;
 
+    // seek to end
     while (raw < end) {
       // read to whitespace or end of the line
       if (*raw == ' ' || *raw == '\0') {
@@ -309,15 +337,16 @@ static inline int ans_strtod(char *raw, int fltsz,
     }
   }
 
-  // seek through end of float value
-  // std::cout << val << std::endl;
+  // store signed value
   if (sign == -1) {
     node_vec.push_back(-val);
   } else {
     node_vec.push_back(val);
   }
 
-  return 0;
+#ifdef DEBUG
+  std::cout << "value: " << val * sign << std::endl;
+#endif
 }
 
 struct NodeSection {
@@ -325,7 +354,7 @@ struct NodeSection {
   NDArray<double, 2> nodes;
   NDArray<int, 1> tc;
   NDArray<int, 1> rc;
-  int n_nodes;
+  int n_nodes = 0;
   bool _has_constraints;
 
   // Default constructor
@@ -396,7 +425,7 @@ struct ElementSection {
   NDArray<int, 1> node_ids;
   NDArray<int, 1> node_id_offsets;
   std::string name = "ElementSection";
-  int n_elem;
+  int n_elem = 0;
 
   ElementSection() {}
 
@@ -423,10 +452,11 @@ struct ElementSection {
     std::ostringstream oss;
     int n_elem = eid.size();
 
+    oss << name << " containing " << n_elem;
     if (n_elem > 1) {
-      oss << name << " containing " << n_elem << " elements\n\n";
+      oss << " elements\n\n";
     } else {
-      oss << name << " containing " << n_elem << " element\n\n";
+      oss << " element\n\n";
     }
 
     // Header
@@ -471,6 +501,36 @@ struct ElementSolidSection : public ElementSection {
       : ElementSection(eid_vec, pid_vec, node_ids_vec, node_id_offsets_vec) {
     name = "ElementSolidSection";
   }
+
+  // convert cells, offset, and celltypes to vtk style arrays
+  nb::tuple ToVTK() {
+    NDArray<uint8_t, 1> celltypes_arr = MakeNDArray<uint8_t, 1>({(int)n_elem});
+    // NDArray<int64_t, 1> offsets_arr = MakeNDArray<int64_t, 1>({(int)(n_elem +
+    // 1)}); NDArray<int64_t, 1> cells_arr = MakeNDArray<int64_t,
+    // 1>({(int)node_ids.size()});
+
+    uint8_t *celltypes = celltypes_arr.data();
+    // int64_t *offsets = offsets_arr.data();
+    // int64_t *cells = cells_arr.data();
+
+    const int *node_id_offsets_data = node_id_offsets.data();
+    const int *node_ids_data = node_ids.data();
+
+    int c = 0;
+    // offsets[0] = 0;
+    uint8_t celltype = VTK_EMPTY_CELL;
+    for (int i; i < n_elem; i++) {
+      // int offset = node_id_offsets_data[i];
+      // int el_sz = 8;  // assuming hex
+      celltypes[i] = VTK_HEXAHEDRON;
+      // offsets[i + 1] = offsets[i] + el_sz; // start of next cell
+      // for (int j=0; j< el_sz; j++){
+      //     cells[c++] = node_ids_data[offset + j];
+      // }
+    } // for each cell
+
+    return nb::make_tuple(node_ids, node_id_offsets, celltypes_arr);
+  } // to vtk
 };
 
 struct ElementShellSection : public ElementSection {
@@ -482,6 +542,52 @@ struct ElementShellSection : public ElementSection {
       : ElementSection(eid_vec, pid_vec, node_ids_vec, node_id_offsets_vec) {
     name = "ElementShellSection";
   }
+
+  // convert cells, offset, and celltypes to vtk style arrays
+  nb::tuple ToVTK() {
+    NDArray<uint8_t, 1> celltypes_arr = MakeNDArray<uint8_t, 1>({(int)n_elem});
+    NDArray<int64_t, 1> offsets_arr =
+        MakeNDArray<int64_t, 1>({(int)(n_elem + 1)});
+
+    uint8_t *celltypes = celltypes_arr.data();
+    int64_t *offsets = offsets_arr.data();
+    int64_t *cells = AllocateArray<int64_t>(node_ids.size());
+
+    const int *node_id_offsets_data = node_id_offsets.data();
+    const int *node_ids_data = node_ids.data();
+
+    int el_sz = 0;
+    int c = 0;
+    offsets[0] = 0;
+    uint8_t celltype = VTK_EMPTY_CELL;
+    for (int i; i < n_elem; i++) {
+      // determine if the cell is a quad or triangle
+      int offset = node_id_offsets_data[i];
+      // int el_sz = node_id_offsets_data[i+1] - offset;
+      // if (el_sz == 4){
+      if (node_ids_data[offset + 2] == node_ids_data[offset + 3]) {
+        celltypes[i] = VTK_TRIANGLE;
+        el_sz = 3;
+      } else {
+        celltypes[i] = VTK_QUAD;
+        el_sz = 4;
+      }
+      // } else {
+      //     throw std::runtime_error("Unsupported shell cell size");
+      // }
+
+      offsets[i + 1] = offsets[i] + el_sz; // start of next cell
+      for (int j = 0; j < el_sz; j++) {
+        cells[c++] = node_ids_data[offset + j];
+      }
+
+    } // for each cell
+
+    // make a new ndarray wrapping the old data with a new size rather than
+    // reallocating
+    NDArray<int64_t, 1> cells_arr = WrapNDarray<int64_t, 1>(cells, {c});
+    return nb::make_tuple(cells_arr, offsets_arr, celltypes_arr);
+  } // to vtk
 };
 
 class Deck {
@@ -561,13 +667,24 @@ public:
 
       // skip comments
       if (memmap[0] == '$') {
+#ifdef DEBUG
+        std::cout << "Skipping comment line" << std::endl;
+#endif
         memmap.seek_eol();
         continue;
       }
 
+#ifdef DEBUG
+      std::cout << "Reading node" << std::endl;
+#endif
+
       // Read node num (assumes first 8 char)
       nnum.push_back(fast_atoi(memmap.current, 8));
       memmap += 8;
+
+#ifdef DEBUG
+      std::cout << "Reading NID " << nnum.back() << std::endl;
+#endif
 
       // next three are always node coordinates in the format of F12.9
       // which comes to 16 characters total
@@ -577,6 +694,10 @@ public:
       memmap += 16;
       ans_strtod(memmap.current, 16, nodes);
       memmap += 16;
+
+#ifdef DEBUG
+      std::cout << "Done reading coordinates " << std::endl;
+#endif
 
       // constraints
       if (memmap[0] == '\n') {
@@ -725,6 +846,7 @@ NB_MODULE(_deck, m) {
       .def(nb::init())
       .def("__repr__", &ElementSolidSection::ToString)
       .def("__len__", &ElementSolidSection::Length)
+      .def("to_vtk", &ElementSolidSection::ToVTK)
       .def_ro("eid", &ElementSolidSection::eid, nb::rv_policy::automatic)
       .def_ro("pid", &ElementSolidSection::pid, nb::rv_policy::automatic)
       .def_ro("node_ids", &ElementSolidSection::node_ids,
@@ -736,6 +858,7 @@ NB_MODULE(_deck, m) {
       .def(nb::init())
       .def("__repr__", &ElementShellSection::ToString)
       .def("__len__", &ElementShellSection::Length)
+      .def("to_vtk", &ElementShellSection::ToVTK)
       .def_ro("eid", &ElementShellSection::eid, nb::rv_policy::automatic)
       .def_ro("pid", &ElementShellSection::pid, nb::rv_policy::automatic)
       .def_ro("node_ids", &ElementShellSection::node_ids,

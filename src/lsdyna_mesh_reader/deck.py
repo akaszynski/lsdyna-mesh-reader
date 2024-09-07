@@ -61,28 +61,20 @@ class Deck(_Deck):
             raise NotImplementedError("Deck missing element sections")
 
         # add shell sections
-        offsets: List[NDArray[np.int32]] = []
+        offsets: List[NDArray[np.int64]] = []
         celltypes: List[NDArray[np.uint8]] = []
-        cells: List[NDArray[np.int32]] = []
+        cells: List[NDArray[np.int64]] = []
         part_ids = []
         for section in element_sections:
+            section_cells, section_offset, section_celltypes = section.to_vtk()
             if offsets:
                 # we need to shift by the last value of the last offset
-                offsets.append(section.node_id_offsets[1:] + offsets[-1][-1])
+                offsets.append(section_offset[1:] + offsets[-1][-1])
             else:
-                offsets.append(section.node_id_offsets)
+                offsets.append(section_offset)
 
-            if isinstance(section, ElementSolidSection):
-                celltype = pv.CellType.HEXAHEDRON
-            elif isinstance(section, ElementShellSection):
-                celltype = pv.CellType.QUAD
-            else:
-                raise NotImplementedError(f"Unsupported section {type(section)}")
-
-            shell_celltypes = np.full(len(section), celltype, dtype=np.uint8)
-            celltypes.append(shell_celltypes)
-
-            cells.append(id_map[section.node_ids])
+            celltypes.append(section_celltypes)
+            cells.append(id_map[section_cells])
             part_ids.append(section.pid)
 
         offsets_arr = np.hstack(offsets, dtype=ID_TYPE)

@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Tuple
 
 import numpy as np
 from numpy.typing import NDArray
@@ -7,6 +7,8 @@ from numpy.typing import NDArray
 IntArray = NDArray[np.int32]
 FloatArray1D = NDArray[np.float64]
 FloatArray2D = NDArray[np.float64]
+LongArray1D = NDArray[np.int64]
+Uint8Array1D = NDArray[np.uint8]
 
 class NodeSection:
     def __init__(self) -> None: ...
@@ -31,6 +33,7 @@ class ElementSection:
     @property
     def node_id_offsets(self) -> IntArray: ...
     def __len__(self) -> int: ...
+    def to_vtk(self) -> Tuple[LongArray1D, LongArray1D, Uint8Array1D]: ...
 
 class ElementShellSection(ElementSection): ...
 class ElementSolidSection(ElementSection): ...
