@@ -508,6 +508,10 @@ struct ElementSolidSection : public ElementSection {
     NDArray<int64_t, 1> offsets_arr =
         MakeNDArray<int64_t, 1>({(int)(n_elem + 1)});
 
+    if (n_elem == 0) {
+      throw std::runtime_error("No cells to map to VTK cell types.");
+    }
+
     uint8_t *celltypes = celltypes_arr.data();
     int64_t *offsets = offsets_arr.data();
     int64_t *cells = AllocateArray<int64_t>(node_ids.size());
