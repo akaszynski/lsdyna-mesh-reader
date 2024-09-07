@@ -522,7 +522,7 @@ struct ElementSolidSection : public ElementSection {
     int c = 0;
     offsets[0] = 0;
     uint8_t celltype = VTK_EMPTY_CELL;
-    for (int i; i < n_elem; i++) {
+    for (int i = 0; i < n_elem; i++) {
 
       int el_sz = 0;
       int offset = node_id_offsets_data[i];
@@ -556,7 +556,6 @@ struct ElementSolidSection : public ElementSection {
 
     } // for each cell
 
-    c = 18;
     NDArray<int64_t, 1> cells_arr = WrapNDarray<int64_t, 1>(cells, {c});
     return nb::make_tuple(cells_arr, offsets_arr, celltypes_arr);
   } // to vtk
