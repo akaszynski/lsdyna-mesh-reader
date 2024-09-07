@@ -3,8 +3,7 @@
 from importlib.metadata import PackageNotFoundError, version
 
 from lsdyna_mesh_reader import examples
-
-# from lsdyna_mesh_reader.deck import Deck
+from lsdyna_mesh_reader.deck import Deck
 
 # get current version from the package metadata
 try:

@@ -1,8 +1,9 @@
 from pathlib import Path
 import numpy as np
 
-from lsdyna_mesh_reader._deck import Deck
-
+import lsdyna_mesh_reader
+from lsdyna_mesh_reader._deck import _Deck
+from lsdyna_mesh_reader import examples
 
 NODE_SECTION = """*NODE
        1 2.309401035E+00-2.309401035E+00-2.309401035E+00       0       0
@@ -64,7 +65,7 @@ def test_node_section(tmp_path: Path) -> None:
     with open(filename, "w") as fid:
         fid.write(NODE_SECTION)
 
-    deck = Deck(filename)
+    deck = _Deck(filename)
     deck.read_line()
     deck.read_node_section()
 
@@ -84,7 +85,7 @@ def test_element_solid_section(tmp_path: Path) -> None:
     with open(filename, "w") as fid:
         fid.write(ELEMENT_SOLID_SECTION)
 
-    deck = Deck(filename)
+    deck = _Deck(filename)
     deck.read_line()
     deck.read_element_solid_section()
 
@@ -106,7 +107,7 @@ def test_element_shell_section(tmp_path: Path) -> None:
     with open(filename, "w") as fid:
         fid.write(ELEMENT_SHELL_SECTION)
 
-    deck = Deck(filename)
+    deck = _Deck(filename)
     deck.read_line()
     deck.read_element_shell_section()
 
@@ -121,3 +122,31 @@ def test_element_shell_section(tmp_path: Path) -> None:
 
     offsets = np.cumsum([0] + [len(element) for element in ELEMENT_SHELL_SECTION_ELEMS])
     assert np.allclose(element_section.node_id_offsets, offsets)
+
+
+def test_read_birdball() -> None:
+    deck = lsdyna_mesh_reader.Deck(examples.birdball)
+    assert "  Node sections:              1" in str(deck)
+    assert "  Element Solid sections:     1" in str(deck)
+
+    assert len(deck.node_sections) == 1
+    node_section = deck.node_sections[0]
+    assert len(node_section) == 1281
+    assert len(node_section.nodes) == 1281
+    assert node_section.nnum[-1] == 1344
+
+    assert len(deck.element_solid_sections) == 1
+    element_solid_section = deck.element_solid_sections[0]
+    assert len(element_solid_section) == 816
+    assert len(element_solid_section.eid) == 816
+    assert len(element_solid_section.pid) == 816
+    assert len(element_solid_section.node_id_offsets) == 817
+    assert len(element_solid_section.node_ids) == 816 * 8
+
+    assert len(deck.element_shell_sections) == 1
+    element_shell_section = deck.element_shell_sections[0]
+    assert len(element_shell_section) == 100
+    assert len(element_shell_section.eid) == 100
+    assert len(element_shell_section.pid) == 100
+    assert len(element_shell_section.node_id_offsets) == 101
+    assert len(element_shell_section.node_ids) == 100 * 4

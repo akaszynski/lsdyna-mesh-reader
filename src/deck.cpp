@@ -30,6 +30,8 @@ using namespace nb::literals;
 #include <unistd.h>
 #endif
 
+#define DEBUG
+
 #define NNUM_RESERVE 16384
 #define ENUM_RESERVE 16384
 
@@ -323,30 +325,37 @@ struct NodeSection {
   NDArray<double, 2> nodes;
   NDArray<int, 1> tc;
   NDArray<int, 1> rc;
+  int n_nodes;
+  bool _has_constraints;
 
   // Default constructor
   NodeSection() {}
 
   NodeSection(std::vector<int> nnum_vec, std::vector<double> nodes_vec,
-              std::vector<int> tc_vec, std::vector<int> rc_vec) {
-    // Assuming the size of the vectors determines the shape of the arrays
-    std::array<int, 1> nnum_shape = {static_cast<int>(nnum_vec.size())};
-    std::array<int, 2> nodes_shape = {static_cast<int>(nnum_vec.size()), 3};
+              std::vector<int> tc_vec, std::vector<int> rc_vec,
+              bool has_constraints) {
+    _has_constraints = has_constraints;
+    n_nodes = nnum_vec.size();
+    std::array<int, 1> nnum_shape = {static_cast<int>(n_nodes)};
+    std::array<int, 2> nodes_shape = {static_cast<int>(n_nodes), 3};
 
     // Wrap vectors as NDArrays
     nnum = WrapVectorAsNDArray(std::move(nnum_vec), nnum_shape);
     nodes = WrapVectorAsNDArray(std::move(nodes_vec), nodes_shape);
-    tc = WrapVectorAsNDArray(std::move(tc_vec), nnum_shape);
-    rc = WrapVectorAsNDArray(std::move(rc_vec), nnum_shape);
+    if (has_constraints) {
+      tc = WrapVectorAsNDArray(std::move(tc_vec), nnum_shape);
+      rc = WrapVectorAsNDArray(std::move(rc_vec), nnum_shape);
+    }
   }
+
+  int Length() { return n_nodes; }
 
   std::string ToString() const {
     std::ostringstream oss;
-    int num_nodes = nnum.size();
-    if (num_nodes > 1) {
-      oss << "NodeSection containing " << num_nodes << " nodes\n\n";
+    if (n_nodes > 1) {
+      oss << "NodeSection containing " << n_nodes << " nodes\n\n";
     } else {
-      oss << "NodeSection containing " << num_nodes << " node\n\n";
+      oss << "NodeSection containing " << n_nodes << " node\n\n";
     }
 
     // Header
@@ -356,19 +365,24 @@ struct NodeSection {
            "-------|\n";
 
     // Output first 3 nodes in Fortran-like format
-    for (int i = 0; i < std::min(10, num_nodes); ++i) {
+    for (int i = 0; i < std::min(10, n_nodes); ++i) {
       oss << std::setw(8) << nnum(i) << " " // Node ID (nnum)
           << std::setw(15) << std::scientific << std::setprecision(8)
           << nodes(i, 0) << " " // X
           << std::setw(15) << std::scientific << std::setprecision(8)
           << nodes(i, 1) << " " // Y
           << std::setw(15) << std::scientific << std::setprecision(8)
-          << nodes(i, 2) << " "             // Z
-          << std::setw(8) << tc(i) << " "   // tc
-          << std::setw(8) << rc(i) << "\n"; // rc
+          << nodes(i, 2) << " "; // Z
+
+      if (_has_constraints) {
+        oss << std::setw(8) << tc(i) << " " // tc
+            << std::setw(8) << rc(i);       // rc
+      }
+
+      oss << "\n";
     }
 
-    if (num_nodes > 10) {
+    if (n_nodes > 10) {
       oss << "..." << std::endl;
     }
 
@@ -382,13 +396,15 @@ struct ElementSection {
   NDArray<int, 1> node_ids;
   NDArray<int, 1> node_id_offsets;
   std::string name = "ElementSection";
+  int n_elem;
 
   ElementSection() {}
 
   ElementSection(std::vector<int> eid_vec, std::vector<int> pid_vec,
                  std::vector<int> node_ids_vec,
                  std::vector<int> node_id_offsets_vec) {
-    std::array<int, 1> nel_shape = {static_cast<int>(eid_vec.size())};
+    n_elem = eid_vec.size();
+    std::array<int, 1> nel_shape = {static_cast<int>(n_elem)};
     std::array<int, 1> node_ids_shape = {
         static_cast<int>(node_id_offsets_vec.back())};
     std::array<int, 1> node_ids_offsets_shape = {
@@ -401,14 +417,16 @@ struct ElementSection {
                                           node_ids_offsets_shape);
   }
 
+  int Length() { return n_elem; }
+
   std::string ToString() const {
     std::ostringstream oss;
-    int num_elements = eid.size();
+    int n_elem = eid.size();
 
-    if (num_elements > 1) {
-      oss << name << " containing " << num_elements << " elements\n\n";
+    if (n_elem > 1) {
+      oss << name << " containing " << n_elem << " elements\n\n";
     } else {
-      oss << name << " containing " << num_elements << " element\n\n";
+      oss << name << " containing " << n_elem << " element\n\n";
     }
 
     // Header
@@ -418,7 +436,7 @@ struct ElementSection {
            "-----|-------|\n";
 
     // Output first 10 elements (or less) in Fortran-like format
-    for (int i = 0; i < std::min(10, num_elements); ++i) {
+    for (int i = 0; i < std::min(10, n_elem); ++i) {
       // Print element ID and part ID
       oss << std::setw(8) << eid(i) << ""  // EID
           << std::setw(8) << pid(i) << ""; // PID
@@ -436,7 +454,7 @@ struct ElementSection {
     }
 
     // Add "..." if there are more than 10 elements
-    if (num_elements > 10) {
+    if (n_elem > 10) {
       oss << "...\n";
     }
 
@@ -518,6 +536,12 @@ public:
     // Assumes that we have already read *NODE and are on the start of the
     // node information
 
+#ifdef DEBUG
+    std::cout << "Reading node section" << std::endl;
+#endif
+
+    bool has_constraints = true; // assume true
+
     // Since we don't know the total number of nodes, we'll use vectors here,
     // even though a malloc would be more efficient. Seems they don't store the
     // total number of nodes per section.
@@ -538,6 +562,7 @@ public:
       // skip comments
       if (memmap[0] == '$') {
         memmap.seek_eol();
+        continue;
       }
 
       // Read node num (assumes first 8 char)
@@ -554,22 +579,34 @@ public:
       memmap += 16;
 
       // constraints
-      tc.push_back(fast_atoi(memmap.current, 8));
-      memmap += 8;
-      rc.push_back(fast_atoi(memmap.current, 8));
-      memmap += 8;
+      if (memmap[0] == '\n') {
+        has_constraints = false;
+      }
+
+      if (has_constraints) {
+        tc.push_back(fast_atoi(memmap.current, 8));
+        memmap += 8;
+        rc.push_back(fast_atoi(memmap.current, 8));
+        memmap += 8;
+      }
 
       // skip remainder of the line
       memmap.seek_eol();
     }
 
-    NodeSection *node_section = new NodeSection(nnum, nodes, tc, rc);
+    NodeSection *node_section =
+        new NodeSection(nnum, nodes, tc, rc, has_constraints);
     node_sections.push_back(*node_section);
 
     return;
   }
 
   template <typename T> T ReadElementSection(int num_nodes) {
+
+#ifdef DEBUG
+    std::cout << "Reading element section" << std::endl;
+#endif
+
     std::vector<int> eid;
     eid.reserve(ENUM_RESERVE);
 
@@ -627,9 +664,48 @@ public:
         ReadElementSection<ElementSolidSection>(8));
   }
 
+  // Read the section following the *ELEMENT_SHELL command
   void ReadElementShellSection() {
     element_shell_sections.push_back(
         ReadElementSection<ElementShellSection>(4));
+  }
+
+  /* Read the entire deck */
+  void Read() {
+    int first_char, next_char;
+
+    while (true) {
+      // Parse based on the first character rather than reading the entire
+      // line. It's faster and the parsing logic is always based on the first
+      // character
+
+      if (memmap.eof()) {
+#ifdef DEBUG
+        std::cout << "Reached EOF" << std::endl;
+#endif
+        break;
+      }
+
+      first_char = memmap[0];
+      // #ifdef DEBUG
+      //             std::cout << "Read character: " <<
+      //             static_cast<char>(first_char) << std::endl;
+      // #endif
+      // Check if line contains a keyword
+      if (first_char != '*') {
+        memmap.seek_eol();
+        continue;
+      }
+
+      memmap.read_line();
+      if (memmap.line.compare(0, 5, "*NODE") == 0) {
+        ReadNodeSection();
+      } else if (memmap.line.compare(0, 14, "*ELEMENT_SOLID") == 0) {
+        ReadElementSolidSection();
+      } else if (memmap.line.compare(0, 14, "*ELEMENT_SHELL") == 0) {
+        ReadElementShellSection();
+      }
+    }
   }
 
   int ReadLine() { return memmap.read_line(); }
@@ -639,6 +715,7 @@ NB_MODULE(_deck, m) {
   nb::class_<NodeSection>(m, "NodeSection")
       .def(nb::init())
       .def("__repr__", &NodeSection::ToString)
+      .def("__len__", &NodeSection::Length)
       .def_ro("nodes", &NodeSection::nodes, nb::rv_policy::automatic)
       .def_ro("nnum", &NodeSection::nnum, nb::rv_policy::automatic)
       .def_ro("tc", &NodeSection::tc, nb::rv_policy::automatic)
@@ -647,6 +724,7 @@ NB_MODULE(_deck, m) {
   nb::class_<ElementSolidSection>(m, "ElementSolidSection")
       .def(nb::init())
       .def("__repr__", &ElementSolidSection::ToString)
+      .def("__len__", &ElementSolidSection::Length)
       .def_ro("eid", &ElementSolidSection::eid, nb::rv_policy::automatic)
       .def_ro("pid", &ElementSolidSection::pid, nb::rv_policy::automatic)
       .def_ro("node_ids", &ElementSolidSection::node_ids,
@@ -657,6 +735,7 @@ NB_MODULE(_deck, m) {
   nb::class_<ElementShellSection>(m, "ElementShellSection")
       .def(nb::init())
       .def("__repr__", &ElementShellSection::ToString)
+      .def("__len__", &ElementShellSection::Length)
       .def_ro("eid", &ElementShellSection::eid, nb::rv_policy::automatic)
       .def_ro("pid", &ElementShellSection::pid, nb::rv_policy::automatic)
       .def_ro("node_ids", &ElementShellSection::node_ids,
@@ -664,11 +743,12 @@ NB_MODULE(_deck, m) {
       .def_ro("node_id_offsets", &ElementShellSection::node_id_offsets,
               nb::rv_policy::automatic);
 
-  nb::class_<Deck>(m, "Deck")
+  nb::class_<Deck>(m, "_Deck")
       .def(nb::init<const std::string &>(), "fname"_a, "A LS-DYNA deck.")
       .def_ro("node_sections", &Deck::node_sections)
       .def_ro("element_solid_sections", &Deck::element_solid_sections)
       .def_ro("element_shell_sections", &Deck::element_shell_sections)
+      .def("read", &Deck::Read)
       .def("read_line", &Deck::ReadLine)
       .def("read_element_solid_section", &Deck::ReadElementSolidSection)
       .def("read_element_shell_section", &Deck::ReadElementShellSection)
