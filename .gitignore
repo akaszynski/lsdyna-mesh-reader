@@ -37,6 +37,8 @@ doc/source/examples/*
 *.tar.gz
 *.mypy_cache/
 
+# autosummary
+_autosummary/
 
 # test scripts
 *.sh
