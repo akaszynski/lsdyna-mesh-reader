@@ -854,7 +854,6 @@ public:
 NB_MODULE(_deck, m) {
   nb::class_<NodeSection>(m, "NodeSection")
       .def(nb::init())
-      .def("__doc__", &NodeSection::PyDoc)
       .def("__repr__", &NodeSection::ToString)
       .def("__len__", &NodeSection::Length)
       .def_ro("coordinates", &NodeSection::coord, nb::rv_policy::automatic)
