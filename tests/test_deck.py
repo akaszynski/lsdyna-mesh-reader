@@ -16,7 +16,7 @@ NODE_SECTION = """*NODE
 *END
 """
 
-NODE_SECTION_NODES_EXPECTED = np.array(
+NODE_SECTION_COORD_EXPECTED = np.array(
     [
         [2.309401035e00, -2.309401035e00, -2.309401035e00],
         [-2.039600611e00, 2.039600611e00, -2.039600611e00],
@@ -72,8 +72,8 @@ def test_node_section(tmp_path: Path) -> None:
 
     assert "NodeSection containing 5 nodes" in str(node_section)
 
-    assert np.allclose(node_section.nodes, NODE_SECTION_NODES_EXPECTED)
-    assert np.allclose(node_section.nnum, range(1, 6))
+    assert np.allclose(node_section.coordinates, NODE_SECTION_COORD_EXPECTED)
+    assert np.allclose(node_section.nid, range(1, 6))
     assert np.allclose(node_section.tc, [0, 0, 1, 2, 0])
     assert np.allclose(node_section.rc, [0, 3, 4, 0, 0])
 
@@ -148,8 +148,8 @@ def test_read_birdball() -> None:
     assert len(deck.node_sections) == 1
     node_section = deck.node_sections[0]
     assert len(node_section) == 1281
-    assert len(node_section.nodes) == 1281
-    assert node_section.nnum[-1] == 1344
+    assert len(node_section.coordinates) == 1281
+    assert node_section.nid[-1] == 1344
 
     assert len(deck.element_solid_sections) == 1
     element_solid_section = deck.element_solid_sections[0]

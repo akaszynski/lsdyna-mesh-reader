@@ -50,7 +50,7 @@ jobs:
 
     - name: Run tests
       run: |
-        pip install pytest
+        pip install pytest pyvista
         pytest -x
 
     - uses: actions/upload-artifact@v4

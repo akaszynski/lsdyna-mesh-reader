@@ -350,8 +350,8 @@ static inline void ans_strtod(char *raw, int fltsz,
 }
 
 struct NodeSection {
-  NDArray<int, 1> nnum;
-  NDArray<double, 2> nodes;
+  NDArray<int, 1> nid;
+  NDArray<double, 2> coord;
   NDArray<int, 1> tc;
   NDArray<int, 1> rc;
   int n_nodes = 0;
@@ -360,20 +360,20 @@ struct NodeSection {
   // Default constructor
   NodeSection() {}
 
-  NodeSection(std::vector<int> nnum_vec, std::vector<double> nodes_vec,
+  NodeSection(std::vector<int> nid_vec, std::vector<double> nodes_vec,
               std::vector<int> tc_vec, std::vector<int> rc_vec,
               bool has_constraints) {
     _has_constraints = has_constraints;
-    n_nodes = nnum_vec.size();
-    std::array<int, 1> nnum_shape = {static_cast<int>(n_nodes)};
-    std::array<int, 2> nodes_shape = {static_cast<int>(n_nodes), 3};
+    n_nodes = nid_vec.size();
+    std::array<int, 1> nid_shape = {static_cast<int>(n_nodes)};
+    std::array<int, 2> coord_shape = {static_cast<int>(n_nodes), 3};
 
     // Wrap vectors as NDArrays
-    nnum = WrapVectorAsNDArray(std::move(nnum_vec), nnum_shape);
-    nodes = WrapVectorAsNDArray(std::move(nodes_vec), nodes_shape);
+    nid = WrapVectorAsNDArray(std::move(nid_vec), nid_shape);
+    coord = WrapVectorAsNDArray(std::move(nodes_vec), coord_shape);
     if (has_constraints) {
-      tc = WrapVectorAsNDArray(std::move(tc_vec), nnum_shape);
-      rc = WrapVectorAsNDArray(std::move(rc_vec), nnum_shape);
+      tc = WrapVectorAsNDArray(std::move(tc_vec), nid_shape);
+      rc = WrapVectorAsNDArray(std::move(rc_vec), nid_shape);
     }
   }
 
@@ -395,13 +395,13 @@ struct NodeSection {
 
     // Output first 3 nodes in Fortran-like format
     for (int i = 0; i < std::min(10, n_nodes); ++i) {
-      oss << std::setw(8) << nnum(i) << " " // Node ID (nnum)
+      oss << std::setw(8) << nid(i) << " " // Node ID (nid)
           << std::setw(15) << std::scientific << std::setprecision(8)
-          << nodes(i, 0) << " " // X
+          << coord(i, 0) << " " // X
           << std::setw(15) << std::scientific << std::setprecision(8)
-          << nodes(i, 1) << " " // Y
+          << coord(i, 1) << " " // Y
           << std::setw(15) << std::scientific << std::setprecision(8)
-          << nodes(i, 2) << " "; // Z
+          << coord(i, 2) << " "; // Z
 
       if (_has_constraints) {
         oss << std::setw(8) << tc(i) << " " // tc
@@ -670,10 +670,10 @@ public:
     // Since we don't know the total number of nodes, we'll use vectors here,
     // even though a malloc would be more efficient. Seems they don't store the
     // total number of nodes per section.
-    std::vector<int> nnum;
-    nnum.reserve(NNUM_RESERVE);
-    std::vector<double> nodes;
-    nodes.reserve(NNUM_RESERVE * 3);
+    std::vector<int> nid;
+    nid.reserve(NNUM_RESERVE);
+    std::vector<double> coord;
+    coord.reserve(NNUM_RESERVE * 3);
 
     std::vector<int> tc;
     tc.reserve(NNUM_RESERVE);
@@ -698,20 +698,20 @@ public:
 #endif
 
       // Read node num (assumes first 8 char)
-      nnum.push_back(fast_atoi(memmap.current, 8));
+      nid.push_back(fast_atoi(memmap.current, 8));
       memmap += 8;
 
 #ifdef DEBUG
-      std::cout << "Reading NID " << nnum.back() << std::endl;
+      std::cout << "Reading NID " << nid.back() << std::endl;
 #endif
 
       // next three are always node coordinates in the format of F12.9
       // which comes to 16 characters total
-      ans_strtod(memmap.current, 16, nodes);
+      ans_strtod(memmap.current, 16, coord);
       memmap += 16;
-      ans_strtod(memmap.current, 16, nodes);
+      ans_strtod(memmap.current, 16, coord);
       memmap += 16;
-      ans_strtod(memmap.current, 16, nodes);
+      ans_strtod(memmap.current, 16, coord);
       memmap += 16;
 
 #ifdef DEBUG
@@ -735,7 +735,7 @@ public:
     }
 
     NodeSection *node_section =
-        new NodeSection(nnum, nodes, tc, rc, has_constraints);
+        new NodeSection(nid, coord, tc, rc, has_constraints);
     node_sections.push_back(*node_section);
 
     return;
@@ -854,10 +854,11 @@ public:
 NB_MODULE(_deck, m) {
   nb::class_<NodeSection>(m, "NodeSection")
       .def(nb::init())
+      .def("__doc__", &NodeSection::PyDoc)
       .def("__repr__", &NodeSection::ToString)
       .def("__len__", &NodeSection::Length)
-      .def_ro("nodes", &NodeSection::nodes, nb::rv_policy::automatic)
-      .def_ro("nnum", &NodeSection::nnum, nb::rv_policy::automatic)
+      .def_ro("coordinates", &NodeSection::coord, nb::rv_policy::automatic)
+      .def_ro("nid", &NodeSection::nid, nb::rv_policy::automatic)
       .def_ro("tc", &NodeSection::tc, nb::rv_policy::automatic)
       .def_ro("rc", &NodeSection::rc, nb::rv_policy::automatic);
 

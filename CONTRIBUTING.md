@@ -1,6 +1,6 @@
 ### C Extension
 
-This repository interfaces with `reader.cpp` via
+This repository interfaces with `deck.cpp` via
 [nanobind](https://github.com/wjakob/nanobind) to efficiently generate C++
 extensions.
 

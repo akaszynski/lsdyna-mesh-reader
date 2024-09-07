@@ -35,7 +35,7 @@ Repository = "https://github.com/akaszynski/lsdyna-mesh-reader"
 archs = ["auto64"]  # 64-bit only
 skip = "cp38-* cp313-* pp* *musllinux*"  # 3.9-3.12 and no PyPy and musl-based wheels
 test-command = "pytest {project}/tests"
-test-requires = "pytest"
+test-requires = "pytest pyvista"
 
 [tool.cibuildwheel.macos]
 archs = ["native"]

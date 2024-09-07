@@ -1,0 +1,32 @@
+﻿lsdyna\_mesh\_reader.\_deck.NodeSection
+=======================================
+
+.. currentmodule:: lsdyna_mesh_reader._deck
+
+.. autoclass:: NodeSection
+
+
+
+
+
+
+
+
+   .. rubric:: Attributes
+
+   .. autosummary::
+      :toctree: _autosummary
+
+
+      NodeSection.coordinates
+
+
+      NodeSection.nid
+
+
+      NodeSection.rc
+
+
+      NodeSection.tc
+
+

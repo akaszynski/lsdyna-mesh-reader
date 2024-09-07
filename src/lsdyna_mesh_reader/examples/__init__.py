@@ -23,6 +23,15 @@ birdball = os.path.join(dir_path, "birdball.k")
 # https://www.dynaexamples.com/show-cases/joint-screw/
 joint_screw = os.path.join(dir_path, "EXP_SC_JOINT_SCREW.key")
 
+# https://www.dynaexamples.com/nvh/example-05-03
+wheel = os.path.join(dir_path, "wheel.k")
+
+# https://www.dynaexamples.com/nvh/example-07-01
+bracket = os.path.join(dir_path, "bracket.k")
+
 __all__ = [
     "birdball",
+    "joint_screw",
+    "wheel",
+    "bracket",
 ]
