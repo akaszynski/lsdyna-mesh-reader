@@ -33,7 +33,7 @@ jobs:
       run: pip install .[docs]
 
     - name: Build Documentation
-      run: make -C doc html
+      run: make -C docs html
 
     - name: Deploy
       uses: JamesIves/github-pages-deploy-action@v4.6.4
