@@ -1,4 +1,4 @@
-name: Build and upload
+name: CI/CD
 
 on:
   pull_request:
@@ -13,8 +13,9 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  docs_build:
-    runs-on: ubuntu-22.04
+  docs:
+    name: Build documentation
+    runs-on: ubuntu-latest
 
     env:
       PYANSYS_OFF_SCREEN: true
