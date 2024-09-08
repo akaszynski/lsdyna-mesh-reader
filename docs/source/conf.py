@@ -3,7 +3,7 @@
 import datetime
 import os
 
-import pyvista
+# import pyvista
 from sphinx_gallery.sorting import FileNameSortKey
 
 import lsdyna_mesh_reader
@@ -106,26 +106,6 @@ copybutton_prompt_is_regexp = True
 # a list of builtin themes.
 #
 html_theme = "pydata_sphinx_theme"
-# html_context = {
-#     # Enable the "Edit in GitHub link within the header of each page.
-#     "display_github": True,
-#     # Set the following variables to generate the resulting github URL for each page.
-#     # Format Template: https://{{ github_host|default("github.com") }}/{{
-#     # github_user }}/{{ github_repo }}/blob/{{ github_version }}{{ conf_py_path
-#     # }}{{ pagename }}{{ suffix }}
-#     "github_user": "akaszynski",
-#     "github_repo": "pymeshfix",
-#     "github_version": "master/doc/",
-#     "menu_links_name": "Getting Connected",
-#     "menu_links": [
-#         ('<i class="fa fa-slack fa-fw"></i> Slack Community', "http://slack.pyvista.org"),
-#         (
-#             '<i class="fa fa-comment fa-fw"></i> Support',
-#             "https://github.com/pyvista/pyvista-support",
-#         ),
-#         ('<i class="fa fa-github fa-fw"></i> Source Code', "https://github.com/pyvista/pymeshfix"),
-#     ],
-# }
 
 html_theme_options = {
     "show_prev_next": False,
