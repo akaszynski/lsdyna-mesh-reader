@@ -508,6 +508,10 @@ struct ElementSolidSection : public ElementSection {
     NDArray<int64_t, 1> offsets_arr =
         MakeNDArray<int64_t, 1>({(int)(n_elem + 1)});
 
+    if (n_elem == 0) {
+      throw std::runtime_error("No cells to map to VTK cell types.");
+    }
+
     uint8_t *celltypes = celltypes_arr.data();
     int64_t *offsets = offsets_arr.data();
     int64_t *cells = AllocateArray<int64_t>(node_ids.size());
@@ -518,7 +522,7 @@ struct ElementSolidSection : public ElementSection {
     int c = 0;
     offsets[0] = 0;
     uint8_t celltype = VTK_EMPTY_CELL;
-    for (int i; i < n_elem; i++) {
+    for (int i = 0; i < n_elem; i++) {
 
       int el_sz = 0;
       int offset = node_id_offsets_data[i];
@@ -584,7 +588,7 @@ struct ElementShellSection : public ElementSection {
     int c = 0;
     offsets[0] = 0;
     uint8_t celltype = VTK_EMPTY_CELL;
-    for (int i; i < n_elem; i++) {
+    for (int i = 0; i < n_elem; i++) {
       // determine if the cell is a quad or triangle
       int offset = node_id_offsets_data[i];
       if (node_ids_data[offset + 2] == node_ids_data[offset + 3]) {
@@ -865,7 +869,7 @@ NB_MODULE(_deck, m) {
       .def(nb::init())
       .def("__repr__", &ElementSolidSection::ToString)
       .def("__len__", &ElementSolidSection::Length)
-      .def("to_vtk", &ElementSolidSection::ToVTK, nb::rv_policy::automatic)
+      .def("to_vtk", &ElementSolidSection::ToVTK)
       .def_ro("eid", &ElementSolidSection::eid, nb::rv_policy::automatic)
       .def_ro("pid", &ElementSolidSection::pid, nb::rv_policy::automatic)
       .def_ro("node_ids", &ElementSolidSection::node_ids,
@@ -877,7 +881,7 @@ NB_MODULE(_deck, m) {
       .def(nb::init())
       .def("__repr__", &ElementShellSection::ToString)
       .def("__len__", &ElementShellSection::Length)
-      .def("to_vtk", &ElementShellSection::ToVTK, nb::rv_policy::automatic)
+      .def("to_vtk", &ElementShellSection::ToVTK)
       .def_ro("eid", &ElementShellSection::eid, nb::rv_policy::automatic)
       .def_ro("pid", &ElementShellSection::pid, nb::rv_policy::automatic)
       .def_ro("node_ids", &ElementShellSection::node_ids,
