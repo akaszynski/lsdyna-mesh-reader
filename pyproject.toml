@@ -32,6 +32,7 @@ version = "0.2.dev0"
 docs = ["pydata-sphinx-theme", "numpydoc", "sphinx", "sphinx-copybutton", "myst-parser"]
 
 [project.urls]
+Documentation = "https://akaszynski.github.io/lsdyna-mesh-reader/"
 Repository = "https://github.com/akaszynski/lsdyna-mesh-reader"
 
 [tool.cibuildwheel]
