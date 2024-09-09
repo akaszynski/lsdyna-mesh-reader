@@ -201,7 +201,11 @@ public:
     }
   }
 
+  // True when at end of file
   bool eof() { return current >= start + size; }
+
+  // True when at end of line (DOS and UNIX EOF)
+  bool eol() { return *current == '\n' || *current == '\r'; }
 
   bool read_line() {
     line.clear();
@@ -355,15 +359,12 @@ struct NodeSection {
   NDArray<int, 1> tc;
   NDArray<int, 1> rc;
   int n_nodes = 0;
-  bool _has_constraints;
 
   // Default constructor
   NodeSection() {}
 
   NodeSection(std::vector<int> nid_vec, std::vector<double> nodes_vec,
-              std::vector<int> tc_vec, std::vector<int> rc_vec,
-              bool has_constraints) {
-    _has_constraints = has_constraints;
+              std::vector<int> tc_vec, std::vector<int> rc_vec) {
     n_nodes = nid_vec.size();
     std::array<int, 1> nid_shape = {static_cast<int>(n_nodes)};
     std::array<int, 2> coord_shape = {static_cast<int>(n_nodes), 3};
@@ -371,10 +372,8 @@ struct NodeSection {
     // Wrap vectors as NDArrays
     nid = WrapVectorAsNDArray(std::move(nid_vec), nid_shape);
     coord = WrapVectorAsNDArray(std::move(nodes_vec), coord_shape);
-    if (has_constraints) {
-      tc = WrapVectorAsNDArray(std::move(tc_vec), nid_shape);
-      rc = WrapVectorAsNDArray(std::move(rc_vec), nid_shape);
-    }
+    tc = WrapVectorAsNDArray(std::move(tc_vec), nid_shape);
+    rc = WrapVectorAsNDArray(std::move(rc_vec), nid_shape);
   }
 
   int Length() { return n_nodes; }
@@ -403,10 +402,9 @@ struct NodeSection {
           << std::setw(15) << std::scientific << std::setprecision(8)
           << coord(i, 2) << " "; // Z
 
-      if (_has_constraints) {
-        oss << std::setw(8) << tc(i) << " " // tc
-            << std::setw(8) << rc(i);       // rc
-      }
+      // constraints
+      oss << std::setw(8) << tc(i) << " " // tc
+          << std::setw(8) << rc(i);       // rc
 
       oss << "\n";
     }
@@ -669,8 +667,6 @@ public:
     std::cout << "Reading node section" << std::endl;
 #endif
 
-    bool has_constraints = true; // assume true
-
     // Since we don't know the total number of nodes, we'll use vectors here,
     // even though a malloc would be more efficient. Seems they don't store the
     // total number of nodes per section.
@@ -722,24 +718,32 @@ public:
       std::cout << "Done reading coordinates " << std::endl;
 #endif
 
-      // constraints
-      if (memmap[0] == '\n') {
-        has_constraints = false;
-      }
-
-      if (has_constraints) {
+      // Populate constraints. These may be missing from the node section, and
+      // if they are, populate a zero.
+      if (memmap.eol()) {
+#ifdef DEBUG
+        std::cout << "EOL on tc" << std::endl;
+#endif
+        tc.push_back(0);
+      } else {
         tc.push_back(fast_atoi(memmap.current, 8));
         memmap += 8;
+      }
+
+      if (memmap.eol()) {
+#ifdef DEBUG
+        std::cout << "EOL on rc" << std::endl;
+#endif
+        rc.push_back(0);
+      } else {
         rc.push_back(fast_atoi(memmap.current, 8));
-        memmap += 8;
       }
 
       // skip remainder of the line
       memmap.seek_eol();
     }
 
-    NodeSection *node_section =
-        new NodeSection(nid, coord, tc, rc, has_constraints);
+    NodeSection *node_section = new NodeSection(nid, coord, tc, rc);
     node_sections.push_back(*node_section);
 
     return;
@@ -831,10 +835,11 @@ public:
       }
 
       first_char = memmap[0];
-      // #ifdef DEBUG
-      //             std::cout << "Read character: " <<
-      //             static_cast<char>(first_char) << std::endl;
-      // #endif
+#ifdef DEBUG
+      std::cout << "Read character: " << static_cast<char>(first_char)
+                << std::endl;
+#endif
+
       // Check if line contains a keyword
       if (first_char != '*') {
         memmap.seek_eol();
@@ -848,6 +853,8 @@ public:
         ReadElementSolidSection();
       } else if (memmap.line.compare(0, 14, "*ELEMENT_SHELL") == 0) {
         ReadElementShellSection();
+      } else if (memmap.line.compare(0, 15, "*ELEMENT_TSHELL") == 0) {
+        ReadElementSolidSection();
       }
     }
   }
