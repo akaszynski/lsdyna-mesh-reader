@@ -1,0 +1,40 @@
+﻿lsdyna\_mesh\_reader.Deck
+=========================
+
+.. currentmodule:: lsdyna_mesh_reader
+
+.. autoclass:: Deck
+
+   
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+      :toctree: _autosummary
+   
+      
+      
+      Deck.to_grid
+      
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+      :toctree: _autosummary
+   
+      
+      Deck.element_shell_sections
+      
+      
+      Deck.element_solid_sections
+      
+      
+      Deck.node_sections
+      
+   
+   
