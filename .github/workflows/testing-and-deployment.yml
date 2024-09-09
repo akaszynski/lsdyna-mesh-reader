@@ -36,8 +36,8 @@ jobs:
       run: make -C docs html
 
     - name: Deploy
-      uses: JamesIves/github-pages-deploy-action@v4.6.4
-        # if: startsWith(github.ref, 'refs/tags/')
+      uses: JamesIves/github-pages-deploy-action@v4
+      if: startsWith(github.ref, 'refs/tags/')
       with:
         branch: gh-pages
         folder: docs/build/html
