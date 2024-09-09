@@ -204,8 +204,8 @@ public:
   // True when at end of file
   bool eof() { return current >= start + size; }
 
-  // True when at end of line
-  bool eol() { return *current == '\n'; }
+  // True when at end of line (DOS and UNIX EOF)
+  bool eol() { return *current == '\n' || *current == '\r'; }
 
   bool read_line() {
     line.clear();
