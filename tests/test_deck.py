@@ -1,5 +1,10 @@
-from pathlib import Path
+"""Test lsdyna_mesh_reader deck reader."""
 
+from typing import List
+from pathlib import Path
+import os
+
+import pytest
 import numpy as np
 import pyvista as pv
 
@@ -56,6 +61,17 @@ ELEMENT_SHELL_SECTION_ELEMS = [
     [380, 391, 392, 381],
     [381, 392, 393, 393],
 ]
+
+
+def get_example_files() -> List[str]:
+    file_paths: List[str] = []
+    for attr in dir(examples):
+        eval_attr = getattr(examples, attr)
+        if isinstance(eval_attr, str) and os.path.isfile(eval_attr):
+            if eval_attr.endswith(".key") or eval_attr.endswith(".k"):
+                file_paths.append(eval_attr)
+
+    return file_paths
 
 
 def test_node_section(tmp_path: Path) -> None:
@@ -166,3 +182,24 @@ def test_read_birdball() -> None:
     assert len(element_shell_section.pid) == 100
     assert len(element_shell_section.node_id_offsets) == 101
     assert len(element_shell_section.node_ids) == 100 * 4
+
+
+@pytest.mark.parametrize("file_path", get_example_files())
+def test_examples(file_path: str) -> None:
+    assert os.path.isfile(file_path)
+    deck = lsdyna_mesh_reader.Deck(file_path)
+    grid = deck.to_grid()
+    grid._check_for_consistency()
+
+
+def test_element_tshell() -> None:
+    """Verify we can read in ELEMENT_TSHELL."""
+    deck = lsdyna_mesh_reader.Deck(examples.simple_plate)
+    assert len(deck.element_solid_sections) == 1
+    assert len(deck.element_shell_sections) == 0
+
+    # node section has partial constraints, ensure that it's been populated correctly
+    node_section = deck.node_sections[0]
+    assert len(node_section) == 324
+
+    grid = deck.to_grid()
