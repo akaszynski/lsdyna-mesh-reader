@@ -65,7 +65,7 @@ intersphinx_mapping = {
 }
 
 
-html_static_path = ["_static"]
+# html_static_path = ["_static"]
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]
