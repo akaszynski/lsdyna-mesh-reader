@@ -2,7 +2,7 @@
 
 This library can be used to read in LS-DYNA meshes stored within keyword
 (`*.k`, `*.key`, `*.dyn`) files, also known as keyword format "input
-decks".
+decks". Full documentation for this repository can be found at [lsdyna-mesh-reader Documentation](https://akaszynski.github.io/lsdyna-mesh-reader/).
 
 Many of these example files were obtained from the excellent documentation at
 [LS-DYNA Examples](https://www.dynaexamples.com/).
@@ -169,7 +169,7 @@ PyVista. For example, you could plot the resulting mesh. Here's a full example u
 >>> grid.plot(color="w", smooth_shading=True, show_edges=True)
 ```
 
-![Yaris Static Suspension Mesh](https://github.com/akaszynski/lsdyna-mesh-reader/blob/main/docs/source/images/yaris-mesh.png)
+![Yaris Static Suspension Mesh](https://github.com/akaszynski/lsdyna-mesh-reader/raw/main/docs/source/images/yaris-mesh.png)
 
 ### Caveats and Limitations
 
@@ -181,6 +181,7 @@ Additionally, this reader only supports the following keywords:
 * `*NODE`
 * `*ELEMENT_SHELL`
 * `*ELEMENT_SOLID`
+* `*ELEMENT_TSHELL` (note: sections encoded as solid sections)
 
 The VTK UnstructuredGrid contains only the linear element conversion of the
 underlying LS-DYNA elements, and only supports `VTK_QUAD`, `VTK_TRIANGLE`,

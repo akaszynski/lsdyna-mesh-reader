@@ -26,18 +26,19 @@ description = "Read nodes and elements from LS-DYNA decks."
 name = "lsdyna-mesh-reader"
 readme = "README.md"
 requires-python = ">=3.9"
-version = "0.1.0"
+version = "0.1.1"
 
 [project.optional-dependencies]
 docs = ["pydata-sphinx-theme", "numpydoc", "sphinx", "sphinx-copybutton", "myst-parser"]
 
 [project.urls]
+Documentation = "https://akaszynski.github.io/lsdyna-mesh-reader/"
 Repository = "https://github.com/akaszynski/lsdyna-mesh-reader"
 
 [tool.cibuildwheel]
 archs = ["auto64"]  # 64-bit only
 skip = "cp38-* cp313-* pp* *musllinux*"  # 3.9-3.12 and no PyPy and musl-based wheels
-test-command = "pytest {project}/tests"
+test-command = "pytest {project}/tests -v"
 test-requires = "pytest pyvista"
 
 [tool.cibuildwheel.macos]

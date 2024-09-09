@@ -14,12 +14,12 @@ if TYPE_CHECKING:
 
 
 class Deck:
-    """LS-DYNA deck.
+    r"""LS-DYNA deck.
 
     Parameters
     ----------
     filename : str | pathlib.Path
-        Path to the keyword file (\*.k, \*.key, \*.dyn).
+        Path to the keyword file (`*.k`, `*.key`, `*.dyn`).
 
     Examples
     --------
