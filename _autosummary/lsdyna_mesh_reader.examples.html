@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>lsdyna_mesh_reader.Deck &#8212; lsdyna-mesh-reader 0.1.1 documentation</title>
+    <title>lsdyna_mesh_reader.examples &#8212; lsdyna-mesh-reader 0.1.1 documentation</title>
   
   
   
@@ -41,11 +41,10 @@
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
     <script src="../_static/copybutton.js?v=49e1bf35"></script>
-    <script>DOCUMENTATION_OPTIONS.pagename = '_autosummary/lsdyna_mesh_reader.Deck';</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = '_autosummary/lsdyna_mesh_reader.examples';</script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="lsdyna_mesh_reader.Deck.to_grid" href="_autosummary/lsdyna_mesh_reader.Deck.to_grid.html" />
-    <link rel="prev" title="API Reference" href="../api.html" />
+    <link rel="prev" title="lsdyna_mesh_reader._deck.ElementSolidSection.to_vtk" href="_autosummary/lsdyna_mesh_reader._deck.ElementSolidSection.to_vtk.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   </head>
@@ -294,8 +293,8 @@ document.write(`
 <nav class="bd-docs-nav bd-links"
      aria-label="Section Navigation">
   <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
-  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
-<li class="toctree-l1 current active has-children"><a class="current reference internal" href="#">lsdyna_mesh_reader.Deck</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+  <div class="bd-toc-item navbar-nav"><ul class="nav bd-sidenav">
+<li class="toctree-l1 has-children"><a class="reference internal" href="lsdyna_mesh_reader.Deck.html">lsdyna_mesh_reader.Deck</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l2"><a class="reference internal" href="_autosummary/lsdyna_mesh_reader.Deck.to_grid.html">lsdyna_mesh_reader.Deck.to_grid</a></li>
 <li class="toctree-l2"><a class="reference internal" href="_autosummary/lsdyna_mesh_reader.Deck.element_shell_sections.html">lsdyna_mesh_reader.Deck.element_shell_sections</a></li>
 <li class="toctree-l2"><a class="reference internal" href="_autosummary/lsdyna_mesh_reader.Deck.element_solid_sections.html">lsdyna_mesh_reader.Deck.element_solid_sections</a></li>
@@ -326,8 +325,8 @@ document.write(`
 </ul>
 </details></li>
 </ul>
-<ul class="nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="lsdyna_mesh_reader.examples.html">lsdyna_mesh_reader.examples</a></li>
+<ul class="current nav bd-sidenav">
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">lsdyna_mesh_reader.examples</a></li>
 </ul>
 </div>
 </nav></div>
@@ -385,75 +384,105 @@ document.write(`
 <div id="searchbox"></div>
                 <article class="bd-article">
                   
-  <section id="lsdyna-mesh-reader-deck">
-<h1>lsdyna_mesh_reader.Deck<a class="headerlink" href="#lsdyna-mesh-reader-deck" title="Link to this heading">#</a></h1>
-<dl class="py class">
-<dt class="sig sig-object py" id="lsdyna_mesh_reader.Deck">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">lsdyna_mesh_reader.</span></span><span class="sig-name descname"><span class="pre">Deck</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.12)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.12)"><span class="pre">Path</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#lsdyna_mesh_reader.Deck" title="Link to this definition">#</a></dt>
-<dd><p>LS-DYNA deck.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><dl class="simple">
-<dt><strong>filename</strong><span class="classifier">str | pathlib.Path</span></dt><dd><p>Path to the keyword file (<cite>*.k</cite>, <cite>*.key</cite>, <cite>*.dyn</cite>).</p>
-</dd>
-</dl>
-</dd>
-<dt class="field-even">Attributes<span class="colon">:</span></dt>
-<dd class="field-even"><dl class="simple">
-<dt><a class="reference internal" href="_autosummary/lsdyna_mesh_reader.Deck.element_shell_sections.html#lsdyna_mesh_reader.Deck.element_shell_sections" title="lsdyna_mesh_reader.Deck.element_shell_sections"><code class="xref py py-obj docutils literal notranslate"><span class="pre">element_shell_sections</span></code></a></dt><dd><p>Return the element_shell sections.</p>
-</dd>
-<dt><a class="reference internal" href="_autosummary/lsdyna_mesh_reader.Deck.element_solid_sections.html#lsdyna_mesh_reader.Deck.element_solid_sections" title="lsdyna_mesh_reader.Deck.element_solid_sections"><code class="xref py py-obj docutils literal notranslate"><span class="pre">element_solid_sections</span></code></a></dt><dd><p>Return the element_solid sections.</p>
-</dd>
-<dt><a class="reference internal" href="_autosummary/lsdyna_mesh_reader.Deck.node_sections.html#lsdyna_mesh_reader.Deck.node_sections" title="lsdyna_mesh_reader.Deck.node_sections"><code class="xref py py-obj docutils literal notranslate"><span class="pre">node_sections</span></code></a></dt><dd><p>Return the node sections.</p>
-</dd>
-</dl>
-</dd>
-</dl>
-<p class="rubric">Methods</p>
-<div class="pst-scrollable-table-container"><table class="autosummary longtable table autosummary">
-<tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="_autosummary/lsdyna_mesh_reader.Deck.to_grid.html#lsdyna_mesh_reader.Deck.to_grid" title="lsdyna_mesh_reader.Deck.to_grid"><code class="xref py py-obj docutils literal notranslate"><span class="pre">to_grid</span></code></a>()</p></td>
-<td><p>Convert the mesh within the deck to a pyvista.UnstructuredGrid.</p></td>
-</tr>
-</tbody>
-</table>
-</div>
-<p class="rubric">Examples</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">lsdyna_mesh_reader</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">lsdyna_mesh_reader</span> <span class="kn">import</span> <span class="n">examples</span>
+  <section id="module-lsdyna_mesh_reader.examples">
+<span id="lsdyna-mesh-reader-examples"></span><h1>lsdyna_mesh_reader.examples<a class="headerlink" href="#module-lsdyna_mesh_reader.examples" title="Link to this heading">#</a></h1>
+<p>LS-DYNA Mesh Reader examples module.</p>
+<p>Content reused based on the following implicit open to use license from
+<a class="reference external" href="https://www.dynaexamples.com/">LS-DYNA Examples</a>.</p>
+<p><strong>Usage Notice from LS-DYNA</strong></p>
+<blockquote>
+<div><p>The input files and several class notes are available for download. The
+download is free of charge, a login is not required. All examples are
+presented with a brief description. You may find an example by checking a
+specific class or by using the search functionality of the site.</p>
+<p>The content is prepared for educational purposes. Hence, material
+properties and other parameters might be non-physic for simplification.</p>
+<p>Copyright (c) 2014 DYNAmore GmbH (www.dynamore.de)
+Copying for non-commercial usage allowed, if this notice is included.</p>
+</div></blockquote>
+<section id="example-files">
+<h2>Example Files<a class="headerlink" href="#example-files" title="Link to this heading">#</a></h2>
+<dl class="py data">
+<dt class="sig sig-object py" id="lsdyna_mesh_reader.examples.lsdyna_mesh_reader.examples.birdball">
+<span class="sig-prename descclassname"><span class="pre">lsdyna_mesh_reader.examples.</span></span><span class="sig-name descname"><span class="pre">birdball</span></span><em class="property"><span class="w"> </span><span class="pre">=</span> <span class="pre">str</span></em><a class="headerlink" href="#lsdyna_mesh_reader.examples.lsdyna_mesh_reader.examples.birdball" title="Link to this definition">#</a></dt>
+<dd><p>Path to the <a class="reference external" href="https://www.dynaexamples.com/introduction/intro-by-a.-tabiei/contact/contact-eroding-i">Contact Eroding I</a> example file. Usage:</p>
+<div class="highlight-pycon notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">lsdyna_mesh_reader</span> <span class="kn">import</span> <span class="n">examples</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">lsdyna_mesh_reader</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">deck</span> <span class="o">=</span> <span class="n">lsdyna_mesh_reader</span><span class="o">.</span><span class="n">Deck</span><span class="p">(</span><span class="n">examples</span><span class="o">.</span><span class="n">birdball</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">deck</span>
 <span class="go">LSDYNA Deck with:</span>
 <span class="go">  Node sections:              1</span>
 <span class="go">  Element Solid sections:     1</span>
 <span class="go">  Element Shell sections:     1</span>
 </pre></div>
 </div>
-<p class="rubric">Methods</p>
-<div class="pst-scrollable-table-container"><table class="autosummary longtable table autosummary">
-<tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="_autosummary/lsdyna_mesh_reader.Deck.to_grid.html#lsdyna_mesh_reader.Deck.to_grid" title="lsdyna_mesh_reader.Deck.to_grid"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Deck.to_grid</span></code></a>()</p></td>
-<td><p>Convert the mesh within the deck to a pyvista.UnstructuredGrid.</p></td>
-</tr>
-</tbody>
-</table>
-</div>
-<p class="rubric">Attributes</p>
-<div class="pst-scrollable-table-container"><table class="autosummary longtable table autosummary">
-<tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="_autosummary/lsdyna_mesh_reader.Deck.element_shell_sections.html#lsdyna_mesh_reader.Deck.element_shell_sections" title="lsdyna_mesh_reader.Deck.element_shell_sections"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Deck.element_shell_sections</span></code></a></p></td>
-<td><p>Return the element_shell sections.</p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="_autosummary/lsdyna_mesh_reader.Deck.element_solid_sections.html#lsdyna_mesh_reader.Deck.element_solid_sections" title="lsdyna_mesh_reader.Deck.element_solid_sections"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Deck.element_solid_sections</span></code></a></p></td>
-<td><p>Return the element_solid sections.</p></td>
-</tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="_autosummary/lsdyna_mesh_reader.Deck.node_sections.html#lsdyna_mesh_reader.Deck.node_sections" title="lsdyna_mesh_reader.Deck.node_sections"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Deck.node_sections</span></code></a></p></td>
-<td><p>Return the node sections.</p></td>
-</tr>
-</tbody>
-</table>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="lsdyna_mesh_reader.examples.lsdyna_mesh_reader.examples.joint_screw">
+<span class="sig-prename descclassname"><span class="pre">lsdyna_mesh_reader.examples.</span></span><span class="sig-name descname"><span class="pre">joint_screw</span></span><em class="property"><span class="w"> </span><span class="pre">=</span> <span class="pre">str</span></em><a class="headerlink" href="#lsdyna_mesh_reader.examples.lsdyna_mesh_reader.examples.joint_screw" title="Link to this definition">#</a></dt>
+<dd><p>Path to the <a class="reference external" href="https://www.dynaexamples.com/show-cases/joint-screw/">Joint Screw</a> example file. Usage:</p>
+<div class="highlight-pycon notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">lsdyna_mesh_reader</span> <span class="kn">import</span> <span class="n">examples</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">lsdyna_mesh_reader</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">deck</span> <span class="o">=</span> <span class="n">lsdyna_mesh_reader</span><span class="o">.</span><span class="n">Deck</span><span class="p">(</span><span class="n">examples</span><span class="o">.</span><span class="n">joint_screw</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">deck</span>
+<span class="go">LSDYNA Deck with:</span>
+<span class="go">  Node sections:              1</span>
+<span class="go">  Element Solid sections:     1</span>
+<span class="go">  Element Shell sections:     1</span>
+</pre></div>
 </div>
 </dd></dl>
 
+<dl class="py data">
+<dt class="sig sig-object py" id="lsdyna_mesh_reader.examples.lsdyna_mesh_reader.examples.wheel">
+<span class="sig-prename descclassname"><span class="pre">lsdyna_mesh_reader.examples.</span></span><span class="sig-name descname"><span class="pre">wheel</span></span><em class="property"><span class="w"> </span><span class="pre">=</span> <span class="pre">str</span></em><a class="headerlink" href="#lsdyna_mesh_reader.examples.lsdyna_mesh_reader.examples.wheel" title="Link to this definition">#</a></dt>
+<dd><p>Path to the <a class="reference external" href="https://www.dynaexamples.com/nvh/example-05-03">SSD with a wheel rim</a> example file. Usage:</p>
+<div class="highlight-pycon notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">lsdyna_mesh_reader</span> <span class="kn">import</span> <span class="n">examples</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">lsdyna_mesh_reader</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">deck</span> <span class="o">=</span> <span class="n">lsdyna_mesh_reader</span><span class="o">.</span><span class="n">Deck</span><span class="p">(</span><span class="n">examples</span><span class="o">.</span><span class="n">wheel</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">deck</span>
+<span class="go">LSDYNA Deck with:</span>
+<span class="go">  Node sections:              1</span>
+<span class="go">  Element Solid sections:     0</span>
+<span class="go">  Element Shell sections:     1</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="lsdyna_mesh_reader.examples.lsdyna_mesh_reader.examples.bracket">
+<span class="sig-prename descclassname"><span class="pre">lsdyna_mesh_reader.examples.</span></span><span class="sig-name descname"><span class="pre">bracket</span></span><em class="property"><span class="w"> </span><span class="pre">=</span> <span class="pre">str</span></em><a class="headerlink" href="#lsdyna_mesh_reader.examples.lsdyna_mesh_reader.examples.bracket" title="Link to this definition">#</a></dt>
+<dd><p>Path to <a class="reference external" href="https://www.dynaexamples.com/nvh/example-05-03">An aluminium bracket</a> example file. Usage:</p>
+<div class="highlight-pycon notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">lsdyna_mesh_reader</span> <span class="kn">import</span> <span class="n">examples</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">lsdyna_mesh_reader</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">deck</span> <span class="o">=</span> <span class="n">lsdyna_mesh_reader</span><span class="o">.</span><span class="n">Deck</span><span class="p">(</span><span class="n">examples</span><span class="o">.</span><span class="n">bracket</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">deck</span>
+<span class="go">LSDYNA Deck with:</span>
+<span class="go">  Node sections:              1</span>
+<span class="go">  Element Solid sections:     0</span>
+<span class="go">  Element Shell sections:     1</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="lsdyna_mesh_reader.examples.lsdyna_mesh_reader.examples.simple_plate">
+<span class="sig-prename descclassname"><span class="pre">lsdyna_mesh_reader.examples.</span></span><span class="sig-name descname"><span class="pre">simple_plate</span></span><em class="property"><span class="w"> </span><span class="pre">=</span> <span class="pre">str</span></em><a class="headerlink" href="#lsdyna_mesh_reader.examples.lsdyna_mesh_reader.examples.simple_plate" title="Link to this definition">#</a></dt>
+<dd><p>Path to the <a class="reference external" href="https://www.dynaexamples.com/nvh/example-05-03">Square Plate Out-of-Plane Vibration (thick shell mesh)</a> example file. Usage:</p>
+<div class="highlight-pycon notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">lsdyna_mesh_reader</span> <span class="kn">import</span> <span class="n">examples</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">lsdyna_mesh_reader</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">deck</span> <span class="o">=</span> <span class="n">lsdyna_mesh_reader</span><span class="o">.</span><span class="n">Deck</span><span class="p">(</span><span class="n">examples</span><span class="o">.</span><span class="n">simple_plate</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">deck</span>
+<span class="go">LSDYNA Deck with:</span>
+<span class="go">  Node sections:              1</span>
+<span class="go">  Element Solid sections:     0</span>
+<span class="go">  Element Shell sections:     1</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</section>
 </section>
 
 
@@ -478,14 +507,21 @@ document.write(`
   </div>
   <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="visible nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#lsdyna_mesh_reader.Deck"><code class="docutils literal notranslate"><span class="pre">Deck</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#example-files">Example Files</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#lsdyna_mesh_reader.examples.lsdyna_mesh_reader.examples.birdball"><code class="docutils literal notranslate"><span class="pre">lsdyna_mesh_reader.examples.birdball</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#lsdyna_mesh_reader.examples.lsdyna_mesh_reader.examples.joint_screw"><code class="docutils literal notranslate"><span class="pre">lsdyna_mesh_reader.examples.joint_screw</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#lsdyna_mesh_reader.examples.lsdyna_mesh_reader.examples.wheel"><code class="docutils literal notranslate"><span class="pre">lsdyna_mesh_reader.examples.wheel</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#lsdyna_mesh_reader.examples.lsdyna_mesh_reader.examples.bracket"><code class="docutils literal notranslate"><span class="pre">lsdyna_mesh_reader.examples.bracket</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#lsdyna_mesh_reader.examples.lsdyna_mesh_reader.examples.simple_plate"><code class="docutils literal notranslate"><span class="pre">lsdyna_mesh_reader.examples.simple_plate</span></code></a></li>
+</ul>
+</li>
 </ul>
   </nav></div>
 
   <div class="sidebar-secondary-item">
 
   <div class="tocsection sourcelink">
-    <a href="../_sources/_autosummary/lsdyna_mesh_reader.Deck.rst.txt">
+    <a href="../_sources/_autosummary/lsdyna_mesh_reader.examples.rst.txt">
       <i class="fa-solid fa-file-lines"></i> Show Source
     </a>
   </div>

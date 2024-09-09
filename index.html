@@ -9,7 +9,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 <meta content="LS-DYNA mesh reader user guide. " lang="en" name="description" xml:lang="en" />
 
-    <title>LS-DYNA Mesh Reader &#8212; lsdyna-mesh-reader 0.1.0 documentation</title>
+    <title>LS-DYNA Mesh Reader &#8212; lsdyna-mesh-reader 0.1.1 documentation</title>
   
   
   
@@ -37,7 +37,7 @@
 <link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b" />
   <script src="_static/vendor/fontawesome/6.5.2/js/all.min.js?digest=dfe6caa3a7d634c4db9b"></script>
 
-    <script src="_static/documentation_options.js?v=01f34227"></script>
+    <script src="_static/documentation_options.js?v=a58bc63e"></script>
     <script src="_static/doctools.js?v=9a2dae69"></script>
     <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/clipboard.min.js?v=a7894cd8"></script>
@@ -318,7 +318,7 @@ document.write(`
 <h1>LS-DYNA Mesh Reader<a class="headerlink" href="#ls-dyna-mesh-reader" title="Link to this heading">#</a></h1>
 <p>This library can be used to read in LS-DYNA meshes stored within keyword
 (<code class="docutils literal notranslate"><span class="pre">*.k</span></code>, <code class="docutils literal notranslate"><span class="pre">*.key</span></code>, <code class="docutils literal notranslate"><span class="pre">*.dyn</span></code>) files, also known as keyword format “input
-decks”.</p>
+decks”. Full documentation for this repository can be found at <a class="reference external" href="https://akaszynski.github.io/lsdyna-mesh-reader/">lsdyna-mesh-reader Documentation</a>.</p>
 <p>Many of these example files were obtained from the excellent documentation at
 <a class="reference external" href="https://www.dynaexamples.com/">LS-DYNA Examples</a>.</p>
 <section id="motivation">
@@ -462,7 +462,7 @@ PyVista. For example, you could plot the resulting mesh. Here’s a full example
 <span class="gp">&gt;&gt;&gt; </span><span class="n">grid</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">color</span><span class="o">=</span><span class="s2">&quot;w&quot;</span><span class="p">,</span> <span class="n">smooth_shading</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">show_edges</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </pre></div>
 </div>
-<p><img alt="Yaris Static Suspension Mesh" src="https://github.com/akaszynski/lsdyna-mesh-reader/blob/main/docs/source/images/yaris-mesh.png" /></p>
+<p><img alt="Yaris Static Suspension Mesh" src="https://github.com/akaszynski/lsdyna-mesh-reader/raw/main/docs/source/images/yaris-mesh.png" /></p>
 </section>
 <section id="caveats-and-limitations">
 <h3>Caveats and Limitations<a class="headerlink" href="#caveats-and-limitations" title="Link to this heading">#</a></h3>
@@ -473,6 +473,7 @@ that it fails to load complex or simple keyword decks.</p>
 <li><p><code class="docutils literal notranslate"><span class="pre">*NODE</span></code></p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">*ELEMENT_SHELL</span></code></p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">*ELEMENT_SOLID</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">*ELEMENT_TSHELL</span></code> (note: sections encoded as solid sections)</p></li>
 </ul>
 <p>The VTK UnstructuredGrid contains only the linear element conversion of the
 underlying LS-DYNA elements, and only supports <code class="docutils literal notranslate"><span class="pre">VTK_QUAD</span></code>, <code class="docutils literal notranslate"><span class="pre">VTK_TRIANGLE</span></code>,
