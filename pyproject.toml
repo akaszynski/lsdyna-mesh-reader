@@ -28,6 +28,9 @@ readme = "README.md"
 requires-python = ">=3.9"
 version = "0.1.dev0"
 
+[project.optional-dependencies]
+docs = ["pydata-sphinx-theme", "numpydoc", "sphinx", "sphinx-copybutton", "myst-parser"]
+
 [project.urls]
 Repository = "https://github.com/akaszynski/lsdyna-mesh-reader"
 

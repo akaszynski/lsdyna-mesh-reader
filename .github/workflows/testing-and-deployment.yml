@@ -1,4 +1,4 @@
-name: Build and upload
+name: CI/CD
 
 on:
   pull_request:
@@ -13,6 +13,36 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  docs:
+    name: Build documentation
+    runs-on: ubuntu-latest
+
+    env:
+      PYANSYS_OFF_SCREEN: true
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+        cache: pip
+
+    - name: Install lsdyna-mesh-reader
+      run: pip install .[docs]
+
+    - name: Build Documentation
+      run: make -C docs html
+
+    - name: Deploy
+      uses: JamesIves/github-pages-deploy-action@v4
+      if: startsWith(github.ref, 'refs/tags/')
+      with:
+        branch: gh-pages
+        folder: docs/build/html
+        clean: true
+
   build_wheels:
     name: Build wheels on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
