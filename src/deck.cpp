@@ -353,21 +353,54 @@ static inline void ans_strtod(char *raw, int fltsz,
 #endif
 }
 
+// FORTRAN-like scientific notation string formatting
+void FormatWithExp(char *buffer, size_t buffer_size, double value, int width,
+                   int precision, int num_exp) {
+  // Format the value using snprintf with given width and precision
+  snprintf(buffer, buffer_size, "% *.*E", width, precision, value);
+
+  // Find the 'E' in the output, which marks the beginning of the exponent.
+  char *exponent_pos = strchr(buffer, 'E');
+
+  // Check the current length of the exponent (after 'E+')
+  int exp_length = strlen(exponent_pos + 2);
+
+  // If the exponent is shorter than the desired number of digits
+  if (exp_length < num_exp) {
+    // Shift the exponent one place to the right and prepend a '0'
+    for (int i = exp_length + 1; i > 0; i--) {
+      exponent_pos[2 + i] = exponent_pos[1 + i];
+    }
+    exponent_pos[2] = '0';
+
+    // Shift the entire buffer to the left to remove the space added by snprintf
+    memmove(
+        buffer, buffer + 1,
+        strlen(
+            buffer)); // length of buffer not recalculated, using previous value
+  }
+}
+
 struct NodeSection {
   NDArray<int, 1> nid;
   NDArray<double, 2> coord;
   NDArray<int, 1> tc;
   NDArray<int, 1> rc;
   int n_nodes = 0;
+  int fpos = 0;
 
   // Default constructor
   NodeSection() {}
 
   NodeSection(std::vector<int> nid_vec, std::vector<double> nodes_vec,
-              std::vector<int> tc_vec, std::vector<int> rc_vec) {
+              std::vector<int> tc_vec, std::vector<int> rc_vec,
+              int file_position) {
     n_nodes = nid_vec.size();
     std::array<int, 1> nid_shape = {static_cast<int>(n_nodes)};
     std::array<int, 2> coord_shape = {static_cast<int>(n_nodes), 3};
+
+    // store file position where node block began
+    fpos = file_position;
 
     // Wrap vectors as NDArrays
     nid = WrapVectorAsNDArray(std::move(nid_vec), nid_shape);
@@ -681,6 +714,8 @@ public:
     std::vector<int> rc;
     rc.reserve(NNUM_RESERVE);
 
+    int start_pos = memmap.tellg();
+
     int index = 0;
     while (memmap[0] != '*') {
 
@@ -743,7 +778,7 @@ public:
       memmap.seek_eol();
     }
 
-    NodeSection *node_section = new NodeSection(nid, coord, tc, rc);
+    NodeSection *node_section = new NodeSection(nid, coord, tc, rc, start_pos);
     node_sections.push_back(*node_section);
 
     return;
@@ -862,6 +897,78 @@ public:
   int ReadLine() { return memmap.read_line(); }
 };
 
+void OverwriteNodeSection(const char *filename, int fpos,
+                          const NDArray<const double, 2> coord_arr) {
+
+  // Open the file with read and write permissions
+  FILE *fp = fopen(filename, "r+b");
+  if (!fp) {
+    throw std::runtime_error("Cannot open file for reading and writing.");
+  }
+
+  // Seek to the start position of the node section
+  if (fseeko(fp, fpos, SEEK_SET) != 0) {
+    fclose(fp);
+    throw std::runtime_error(
+        "Cannot seek to the start position of the node section.");
+  }
+
+  int node_idx = 0;
+  off_t line_start_pos;
+  char line[256];
+
+  int n_coord = coord_arr.shape(0);
+  const double *coord = coord_arr.data();
+
+  // Prepare buffers for formatted coordinates
+  char coord_str[17] = {0};
+
+  while (fgets(line, sizeof(line), fp)) {
+    // Record the position of the beginning of the line
+    line_start_pos = ftello(fp) - strlen(line);
+
+    // Skip comment lines
+    if (line[0] == '$') {
+      continue;
+    }
+
+    // Check for end of node section
+    if (line[0] == '*') {
+      break;
+    }
+
+    // Check if we have more nodes to process
+    if (node_idx >= n_coord) {
+      break;
+    }
+
+    // Ensure the line is long enough
+    size_t line_length = strlen(line);
+    if (line_length < 56) {
+      throw std::runtime_error("Insufficient line length.");
+    }
+
+    // Format the coordinates
+    for (int ii = 0; ii < 3; ii++) {
+      // Generate the formatted string
+      FormatWithExp(coord_str, 17, coord[node_idx * 3 + ii], 16, 9, 2);
+      memcpy(&line[8 + ii * 16], coord_str, 16); // coordinate field
+    }
+
+    // Seek back to the beginning of the line and write the updated line
+    fseeko(fp, line_start_pos, SEEK_SET);
+    if (fwrite(line, 1, line_length, fp) != line_length) {
+      fclose(fp);
+      throw std::runtime_error("Failed to write modified line to file.");
+    }
+
+    // Move to the next node
+    node_idx++;
+  }
+
+  fclose(fp);
+}
+
 NB_MODULE(_deck, m) {
   nb::class_<NodeSection>(m, "NodeSection")
       .def(nb::init())
@@ -870,7 +977,8 @@ NB_MODULE(_deck, m) {
       .def_ro("coordinates", &NodeSection::coord, nb::rv_policy::automatic)
       .def_ro("nid", &NodeSection::nid, nb::rv_policy::automatic)
       .def_ro("tc", &NodeSection::tc, nb::rv_policy::automatic)
-      .def_ro("rc", &NodeSection::rc, nb::rv_policy::automatic);
+      .def_ro("rc", &NodeSection::rc, nb::rv_policy::automatic)
+      .def_ro("fpos", &NodeSection::fpos);
 
   nb::class_<ElementSolidSection>(m, "ElementSolidSection")
       .def(nb::init())
@@ -906,4 +1014,6 @@ NB_MODULE(_deck, m) {
       .def("read_element_solid_section", &Deck::ReadElementSolidSection)
       .def("read_element_shell_section", &Deck::ReadElementShellSection)
       .def("read_node_section", &Deck::ReadNodeSection);
+
+  m.def("overwrite_node_section", &OverwriteNodeSection);
 }
