@@ -22,11 +22,7 @@ using namespace nb::literals;
 #if defined(_WIN32) || defined(_WIN64)
 #define NOMINMAX
 #define strtok_r strtok_s
-#include <cstdio>
 #include <windows.h>
-#define fseeko _fseeki64
-#define ftello _ftelli64
-typedef __int64 off_t;
 #else
 #include <fcntl.h>
 #include <sys/mman.h>
@@ -911,7 +907,7 @@ void OverwriteNodeSection(const char *filename, int fpos,
   }
 
   // Seek to the start position of the node section
-  if (fseeko(fp, fpos, SEEK_SET) != 0) {
+  if (fseek(fp, fpos, SEEK_SET) != 0) {
     fclose(fp);
     throw std::runtime_error(
         "Cannot seek to the start position of the node section.");
@@ -960,7 +956,7 @@ void OverwriteNodeSection(const char *filename, int fpos,
     }
 
     // Seek back to the beginning of the line and write the updated line
-    fseeko(fp, line_start_pos, SEEK_SET);
+    fseek(fp, line_start_pos, SEEK_SET);
     if (fwrite(line, 1, line_length, fp) != line_length) {
       fclose(fp);
       throw std::runtime_error("Failed to write modified line to file.");
