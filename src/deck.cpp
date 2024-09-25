@@ -925,7 +925,7 @@ void OverwriteNodeSection(const char *filename, int fpos,
 
   while (fgets(line, sizeof(line), fp)) {
     // Record the position of the beginning of the line
-    line_start_pos = ftello(fp) - strlen(line);
+    line_start_pos = ftell(fp) - strlen(line);
 
     // Skip comment lines
     if (line[0] == '$') {
