@@ -901,7 +901,7 @@ void OverwriteNodeSection(const char *filename, int fpos,
                           const NDArray<const double, 2> coord_arr) {
 
   // Open the file with read and write permissions
-  FILE *fp = fopen(filename, "r+b");
+  FILE *fp = fopen(filename, "rb+");
   if (!fp) {
     throw std::runtime_error("Cannot open file for reading and writing.");
   }
@@ -957,10 +957,7 @@ void OverwriteNodeSection(const char *filename, int fpos,
 
     // Seek back to the beginning of the line and write the updated line
     fseek(fp, line_start_pos, SEEK_SET);
-    if (fwrite(line, 1, line_length, fp) != line_length) {
-      fclose(fp);
-      throw std::runtime_error("Failed to write modified line to file.");
-    }
+    fwrite(line, 1, line_length, fp);
 
     // Move to the next node
     node_idx++;
