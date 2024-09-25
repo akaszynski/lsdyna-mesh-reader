@@ -21,6 +21,9 @@
       NodeSection.coordinates
       
       
+      NodeSection.fpos
+      
+      
       NodeSection.nid
       
       

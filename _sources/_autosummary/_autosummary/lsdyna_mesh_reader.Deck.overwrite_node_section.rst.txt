@@ -1,0 +1,6 @@
+lsdyna\_mesh\_reader.Deck.overwrite\_node\_section
+==================================================
+
+.. currentmodule:: lsdyna_mesh_reader
+
+.. automethod:: Deck.overwrite_node_section
