@@ -247,7 +247,9 @@ class Deck:
 
         return grid
 
-    def overwrite_node_section(self, filename: Union[str, Path], nodes: NDArray[float]) -> None:
+    def overwrite_node_section(
+        self, filename: Union[str, Path], nodes: NDArray[np.float64]
+    ) -> None:
         """
         Create a new deck file with the same content but overwritten node section.
 

@@ -22,7 +22,11 @@ using namespace nb::literals;
 #if defined(_WIN32) || defined(_WIN64)
 #define NOMINMAX
 #define strtok_r strtok_s
+#include <cstdio>
 #include <windows.h>
+#define fseeko _fseeki64
+#define ftello _ftelli64
+typedef __int64 off_t;
 #else
 #include <fcntl.h>
 #include <sys/mman.h>
