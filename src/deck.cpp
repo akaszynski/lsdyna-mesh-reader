@@ -960,7 +960,7 @@ void OverwriteNodeSection(const char *filename, int fpos,
     fseek(fp, line_start_pos, SEEK_SET);
     fwrite(line, 1, line_length, fp);
 #if defined(_WIN32) || defined(_WIN64)
-    fseek(fp, line_start_pos, SEEK_SET);
+    fseek(fp, line_end_pos, SEEK_SET);
 #endif
 
     // Move to the next node
