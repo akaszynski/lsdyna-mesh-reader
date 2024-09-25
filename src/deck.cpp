@@ -959,7 +959,9 @@ void OverwriteNodeSection(const char *filename, int fpos,
     // Seek back to the beginning of the line and write the updated line
     fseek(fp, line_start_pos, SEEK_SET);
     fwrite(line, 1, line_length, fp);
+#if defined(_WIN32) || defined(_WIN64)
     fseek(fp, line_start_pos, SEEK_SET);
+#endif
 
     // Move to the next node
     node_idx++;
