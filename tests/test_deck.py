@@ -219,3 +219,4 @@ def test_overwrite_node_section(tmp_path: Path) -> None:
 
     deck_new = lsdyna_mesh_reader.Deck(new_filename)
     assert np.allclose(deck_new.node_sections[0].coordinates, new_nodes)
+    assert np.allclose(deck_new.node_sections[0].nid, deck.node_sections[0].nid)
