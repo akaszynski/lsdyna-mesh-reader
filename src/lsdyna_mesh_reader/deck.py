@@ -1,10 +1,18 @@
+import os
+import shutil
 from pathlib import Path
 from typing import TYPE_CHECKING, List, Union
 
 import numpy as np
 from numpy.typing import NDArray
 
-from lsdyna_mesh_reader._deck import ElementShellSection, ElementSolidSection, NodeSection, _Deck
+from lsdyna_mesh_reader._deck import (
+    ElementShellSection,
+    ElementSolidSection,
+    NodeSection,
+    _Deck,
+    overwrite_node_section,
+)
 
 if TYPE_CHECKING:
     try:
@@ -19,7 +27,7 @@ class Deck:
     Parameters
     ----------
     filename : str | pathlib.Path
-        Path to the keyword file (`*.k`, `*.key`, `*.dyn`).
+        Path to the keyword file (``*.k``, ``*.key``, ``*.dyn``).
 
     Examples
     --------
@@ -35,8 +43,12 @@ class Deck:
 
     def __init__(self, filename: Union[str, Path]) -> None:
         """Initialize the deck object."""
-        self._deck = _Deck(str(filename))
+        filename = str(filename)
+        if not os.path.isfile(filename):
+            raise FileNotFoundError(f"Invalid file or unable to locate {filename}")
+        self._deck = _Deck(filename)
         self._deck.read()
+        self._filename = filename
 
     @property
     def element_solid_sections(self) -> List[ElementSolidSection]:
@@ -234,6 +246,53 @@ class Deck:
         grid.point_data["Node ID"] = node_section.nid
 
         return grid
+
+    def overwrite_node_section(
+        self, filename: Union[str, Path], nodes: NDArray[np.float64]
+    ) -> None:
+        """
+        Create a new deck file with the same content but overwritten node section.
+
+        Parameters
+        ----------
+        filename : str | pathlib.Path
+            Path to the new file.
+        nodes : np.ndarray[float]
+            New node coordinates to write. Number of nodes must match the
+            number of nodes in the node section.
+
+        Notes
+        -----
+        Overwrites the first node section.
+
+        Examples
+        --------
+        Load an existing LS-DYNA deck and write new nodes to it in a new file.
+
+        >>> import numpy as np
+        >>> import lsdyna_mesh_reader
+        >>> from lsdyna_mesh_reader import examples
+        >>> deck = lsdyna_mesh_reader.Deck(examples.birdball)
+        >>> nodes = deck.node_sections[0].coordinates
+        >>> new_nodes = nodes + np.random.random(nodes.shape)
+        >>> deck.overwrite_node_section("new_deck.k", new_nodes)
+
+        """
+        if not self.node_sections:
+            raise RuntimeError("This deck is missing a node section")
+        nsec = self.node_sections[0]
+
+        if nodes.ndim != 2 or nodes.shape[1] != 3:
+            raise ValueError(f"Expected `nodes` to contain 3D coordinates, not {nodes.shape}")
+        elif nodes.shape[0] != nsec.nid.size:
+            raise RuntimeError(
+                f"Number of coordinates in `nodes` ({nodes.shape[0]}) must match number of "
+                f"nodes in the node section ({nsec.nid.size})"
+            )
+
+        filename = str(filename)
+        shutil.copy(self._filename, filename)
+        overwrite_node_section(filename, nsec.fpos, nodes)
 
     def __repr__(self) -> str:
         lines = ["LSDYNA Deck with:"]

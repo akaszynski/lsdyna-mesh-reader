@@ -203,3 +203,20 @@ def test_element_tshell() -> None:
     assert len(node_section) == 324
 
     grid = deck.to_grid()
+
+
+def test_overwrite_node_section(tmp_path: Path) -> None:
+    filename = str(tmp_path / "tmp.k")
+    with open(filename, "w") as fid:
+        fid.write(NODE_SECTION)
+
+    deck = lsdyna_mesh_reader.Deck(filename)
+
+    new_filename = str(tmp_path / "tmp_overwrite.k")
+    node_section = deck.node_sections[0]
+    new_nodes = node_section.coordinates + np.random.random(node_section.coordinates.shape)
+    deck.overwrite_node_section(new_filename, new_nodes)
+
+    deck_new = lsdyna_mesh_reader.Deck(new_filename)
+    assert np.allclose(deck_new.node_sections[0].coordinates, new_nodes)
+    assert np.allclose(deck_new.node_sections[0].nid, deck.node_sections[0].nid)
