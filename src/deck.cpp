@@ -660,7 +660,7 @@ public:
 
     // Likely bogus leak warnings. See:
     // https://nanobind.readthedocs.io/en/latest/faq.html#why-am-i-getting-errors-about-leaked-functions-and-types
-    // nb::set_leak_warnings(false);
+    nb::set_leak_warnings(false);
   }
 
   ~Deck() { memmap.close_file(); }
