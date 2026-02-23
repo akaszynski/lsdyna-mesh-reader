@@ -14,11 +14,11 @@ classifiers = [
   "Operating System :: Microsoft :: Windows",
   "Operating System :: POSIX",
   "Operating System :: MacOS",
-  "Programming Language :: Python :: 3.9",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
-  "Programming Language :: Python :: 3.13"
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14"
 ]
 dependencies = [
   "numpy>=1.22.4"
@@ -26,7 +26,7 @@ dependencies = [
 description = "Read nodes and elements from LS-DYNA decks."
 name = "lsdyna-mesh-reader"
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 version = "0.2.dev0"
 
 [project.optional-dependencies]
@@ -39,9 +39,10 @@ Repository = "https://github.com/akaszynski/lsdyna-mesh-reader"
 
 [tool.cibuildwheel]
 archs = ["auto64"]  # 64-bit only
-skip = "cp38-* cp314-* pp* *musllinux*"  # 3.9-3.13 and no PyPy and musl-based wheels
-test-command = "pytest {project}/tests -v"
-test-requires = "pytest pyvista"
+build = "cp310-* cp311-* cp312-*"  # Only build Python 3.10 - 3.12 since 3.12 is ABI3
+skip = "*musllinux*"
+test-command = "pytest {project}/tests -vv"
+test-extras = ["tests"]
 
 [tool.cibuildwheel.macos]
 archs = ["native"]
@@ -77,4 +78,5 @@ extend-select = ["I"]
 build-dir = "build/{wheel_tag}"
 minimum-version = "0.4"
 sdist.exclude = [".github", "*.png", "tests", ".mypy_cache", ".pre-commit-config.yaml", "*_cache", "CONTRIBUTING.md", ".gitignore"]
-sdist.include = ["*.cpp"]
+sdist.include = ["*.cpp", "*.h"]
+wheel.py-api = "cp312"
