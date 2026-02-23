@@ -135,6 +135,8 @@ jobs:
         find . -name '*.tar.gz' -exec mv {} dist/ \;
     - name: List artifacts
       run: ls -R
+    - name: Fix sdist filename for PyPI
+      run: for f in dist/*.tar.gz; do mv "$f" "${f//-/_}"; done
     - name: Publish package distributions to PyPI
       uses: pypa/gh-action-pypi-publish@release/v1
     - name: Release
