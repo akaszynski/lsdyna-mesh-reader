@@ -8,6 +8,13 @@
    
 
    
+   .. rubric:: Methods
+
+   .. autosummary::
+      :toctree: _autosummary
+   
+      
+   
    
 
    

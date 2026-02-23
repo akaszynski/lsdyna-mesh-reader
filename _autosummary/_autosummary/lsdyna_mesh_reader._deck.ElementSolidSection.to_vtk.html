@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>lsdyna_mesh_reader._deck.ElementSolidSection.to_vtk &#8212; lsdyna-mesh-reader 0.1.4 documentation</title>
+    <title>lsdyna_mesh_reader._deck.ElementSolidSection.to_vtk &#8212; lsdyna-mesh-reader 0.1.5 documentation</title>
   
   
   
@@ -39,19 +39,19 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    <script src="../../_static/documentation_options.js?v=fd825880"></script>
-    <script src="../../_static/doctools.js?v=9bcbadda"></script>
-    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/documentation_options.js?v=59fadc99"></script>
+    <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
     <script src="../../_static/copybutton.js?v=49e1bf35"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = '_autosummary/_autosummary/lsdyna_mesh_reader._deck.ElementSolidSection.to_vtk';</script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
-    <link rel="next" title="lsdyna_mesh_reader.examples" href="../lsdyna_mesh_reader.examples.html" />
-    <link rel="prev" title="lsdyna_mesh_reader._deck.ElementSolidSection.pid" href="lsdyna_mesh_reader._deck.ElementSolidSection.pid.html" />
+    <link rel="next" title="lsdyna_mesh_reader._deck.ElementSolidSection.eid" href="lsdyna_mesh_reader._deck.ElementSolidSection.eid.html" />
+    <link rel="prev" title="lsdyna_mesh_reader._deck.ElementSolidSection" href="../lsdyna_mesh_reader._deck.ElementSolidSection.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.1.4" />
+  <meta name="docsearch:version" content="0.1.5" />
   </head>
   
   
@@ -289,19 +289,19 @@
 </ul>
 </details></li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="../lsdyna_mesh_reader._deck.ElementShellSection.html">lsdyna_mesh_reader._deck.ElementShellSection</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="lsdyna_mesh_reader._deck.ElementShellSection.to_vtk.html">lsdyna_mesh_reader._deck.ElementShellSection.to_vtk</a></li>
 <li class="toctree-l2"><a class="reference internal" href="lsdyna_mesh_reader._deck.ElementShellSection.eid.html">lsdyna_mesh_reader._deck.ElementShellSection.eid</a></li>
 <li class="toctree-l2"><a class="reference internal" href="lsdyna_mesh_reader._deck.ElementShellSection.node_id_offsets.html">lsdyna_mesh_reader._deck.ElementShellSection.node_id_offsets</a></li>
 <li class="toctree-l2"><a class="reference internal" href="lsdyna_mesh_reader._deck.ElementShellSection.node_ids.html">lsdyna_mesh_reader._deck.ElementShellSection.node_ids</a></li>
 <li class="toctree-l2"><a class="reference internal" href="lsdyna_mesh_reader._deck.ElementShellSection.pid.html">lsdyna_mesh_reader._deck.ElementShellSection.pid</a></li>
-<li class="toctree-l2"><a class="reference internal" href="lsdyna_mesh_reader._deck.ElementShellSection.to_vtk.html">lsdyna_mesh_reader._deck.ElementShellSection.to_vtk</a></li>
 </ul>
 </details></li>
 <li class="toctree-l1 current active has-children"><a class="reference internal" href="../lsdyna_mesh_reader._deck.ElementSolidSection.html">lsdyna_mesh_reader._deck.ElementSolidSection</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l2 current active"><a class="current reference internal" href="#">lsdyna_mesh_reader._deck.ElementSolidSection.to_vtk</a></li>
 <li class="toctree-l2"><a class="reference internal" href="lsdyna_mesh_reader._deck.ElementSolidSection.eid.html">lsdyna_mesh_reader._deck.ElementSolidSection.eid</a></li>
 <li class="toctree-l2"><a class="reference internal" href="lsdyna_mesh_reader._deck.ElementSolidSection.node_id_offsets.html">lsdyna_mesh_reader._deck.ElementSolidSection.node_id_offsets</a></li>
 <li class="toctree-l2"><a class="reference internal" href="lsdyna_mesh_reader._deck.ElementSolidSection.node_ids.html">lsdyna_mesh_reader._deck.ElementSolidSection.node_ids</a></li>
 <li class="toctree-l2"><a class="reference internal" href="lsdyna_mesh_reader._deck.ElementSolidSection.pid.html">lsdyna_mesh_reader._deck.ElementSolidSection.pid</a></li>
-<li class="toctree-l2 current active"><a class="current reference internal" href="#">lsdyna_mesh_reader._deck.ElementSolidSection.to_vtk</a></li>
 </ul>
 </details></li>
 </ul>
@@ -372,9 +372,9 @@
                   
   <section id="lsdyna-mesh-reader-deck-elementsolidsection-to-vtk">
 <h1>lsdyna_mesh_reader._deck.ElementSolidSection.to_vtk<a class="headerlink" href="#lsdyna-mesh-reader-deck-elementsolidsection-to-vtk" title="Link to this heading">#</a></h1>
-<dl class="py attribute">
+<dl class="py method">
 <dt class="sig sig-object py" id="lsdyna_mesh_reader._deck.ElementSolidSection.to_vtk">
-<span class="sig-prename descclassname"><span class="pre">ElementSolidSection.</span></span><span class="sig-name descname"><span class="pre">to_vtk</span></span><a class="headerlink" href="#lsdyna_mesh_reader._deck.ElementSolidSection.to_vtk" title="Link to this definition">#</a></dt>
+<span class="sig-prename descclassname"><span class="pre">ElementSolidSection.</span></span><span class="sig-name descname"><span class="pre">to_vtk</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">self</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)"><span class="pre">tuple</span></a></span></span><a class="headerlink" href="#lsdyna_mesh_reader._deck.ElementSolidSection.to_vtk" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 </section>
@@ -402,7 +402,7 @@
   </div>
   <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="visible nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#lsdyna_mesh_reader._deck.ElementSolidSection.to_vtk"><code class="docutils literal notranslate"><span class="pre">ElementSolidSection.to_vtk</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#lsdyna_mesh_reader._deck.ElementSolidSection.to_vtk"><code class="docutils literal notranslate"><span class="pre">ElementSolidSection.to_vtk()</span></code></a></li>
 </ul>
   </nav></div>
 
@@ -440,7 +440,7 @@
 
   <p class="copyright">
     
-      © Copyright 2024-2025, Alex Kaszynski.
+      © Copyright 2024-2026, Alex Kaszynski.
       <br/>
     
   </p>
@@ -449,7 +449,7 @@
         <div class="footer-item">
 
   <p class="sphinx-version">
-    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3.
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 9.1.0.
     <br/>
   </p>
 </div>

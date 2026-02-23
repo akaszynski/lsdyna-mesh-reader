@@ -8,6 +8,16 @@
    
 
    
+   .. rubric:: Methods
+
+   .. autosummary::
+      :toctree: _autosummary
+   
+      
+      
+      ElementSolidSection.to_vtk
+      
+   
    
 
    
@@ -28,9 +38,6 @@
       
       
       ElementSolidSection.pid
-      
-      
-      ElementSolidSection.to_vtk
       
    
    
