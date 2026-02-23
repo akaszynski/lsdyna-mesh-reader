@@ -32,6 +32,7 @@ version = "0.2.dev0"
 [project.optional-dependencies]
 docs = ["pydata-sphinx-theme", "numpydoc", "sphinx", "sphinx-copybutton", "myst-parser"]
 pyvista = ["pyvista"]
+tests = ["pytest", "pyvista"]
 
 [project.urls]
 Documentation = "https://akaszynski.github.io/lsdyna-mesh-reader/"
