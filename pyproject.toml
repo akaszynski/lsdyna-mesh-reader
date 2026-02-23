@@ -24,7 +24,7 @@ dependencies = [
   "numpy>=1.22.4"
 ]
 description = "Read nodes and elements from LS-DYNA decks."
-name = "lsdyna_mesh_reader"
+name = "lsdyna-mesh-reader"
 readme = "README.md"
 requires-python = ">=3.10"
 version = "0.2.dev0"
