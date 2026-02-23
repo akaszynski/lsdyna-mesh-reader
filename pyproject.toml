@@ -27,7 +27,7 @@ description = "Read nodes and elements from LS-DYNA decks."
 name = "lsdyna-mesh-reader"
 readme = "README.md"
 requires-python = ">=3.10"
-version = "0.1.6"
+version = "0.1.7"
 
 [project.optional-dependencies]
 docs = ["pydata-sphinx-theme", "numpydoc", "sphinx", "sphinx-copybutton", "myst-parser"]
