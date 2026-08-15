@@ -21,6 +21,43 @@ if TYPE_CHECKING:
         pass
 
 
+#: Largest value ``int32`` cell arrays can hold. VTK stores 32-bit offsets and
+#: connectivity natively, at half the memory of the 64-bit ``ID_TYPE``, so the
+#: grid is built from ``int32`` whenever the deck indexes fewer points than
+#: this.
+_INT32_MAX = np.iinfo(np.int32).max
+
+
+def _uniform_cell_width(offsets: NDArray[np.integer]) -> Union[int, None]:
+    """Return the points per cell when every cell is the same width.
+
+    Parameters
+    ----------
+    offsets : numpy.ndarray
+        ``(n_cells + 1,)`` offsets into the connectivity.
+
+    Returns
+    -------
+    int | None
+        Points per cell, or ``None`` when the widths vary or there are no
+        cells. Every cell has to be the same width, so a deck of quads alone
+        or hexahedra alone is uniform, while one mixing quads with triangles,
+        or shells with solids, is not.
+
+    """
+    if offsets.size < 2:
+        return None
+
+    width = int(offsets[1] - offsets[0])
+
+    # a single subtraction rejects the mixed case before scanning every offset
+    if width * (offsets.size - 1) != int(offsets[-1] - offsets[0]):
+        return None
+    if (np.diff(offsets) != width).any():
+        return None
+    return width
+
+
 class Deck:
     r"""LS-DYNA deck.
 
@@ -194,19 +231,26 @@ class Deck:
         try:
             import pyvista as pv
             from pyvista import ID_TYPE, CellArray
+            from pyvista._vtk import numpy_to_vtk, vtkCellArray
             from pyvista.core.pointset import UnstructuredGrid
-            from vtkmodules.util.numpy_support import numpy_to_vtk
-        except ImportError:
-            pass
+        except ImportError as exc:
+            msg = "Deck.to_grid requires PyVista. Install it with: pip install pyvista"
+            raise ImportError(msg) from exc
 
         if not self.node_sections:
             raise RuntimeError("Missing node sections. Unable to generate UnstructuredGrid.")
 
         node_section = self.node_sections[0]
 
+        n_points = len(node_section)
+
+        # Point indices only have to reach n_points, so int32 covers any deck
+        # short of 2**31 nodes and keeps the connectivity half the size.
+        index_dtype = np.int32 if n_points <= _INT32_MAX else ID_TYPE
+
         # map between the node ids and a sequential index
-        id_map = np.empty(node_section.nid[-1] + 1, dtype=ID_TYPE)
-        id_map[node_section.nid] = np.arange(len(node_section), dtype=ID_TYPE)
+        id_map = np.empty(node_section.nid[-1] + 1, dtype=index_dtype)
+        id_map[node_section.nid] = np.arange(n_points, dtype=index_dtype)
 
         element_sections = self.element_shell_sections + self.element_solid_sections
 
@@ -214,9 +258,9 @@ class Deck:
             raise NotImplementedError("Deck missing element sections")
 
         # add shell sections
-        offsets: List[NDArray[np.int64]] = []
+        offsets: List[NDArray[np.integer]] = []
         celltypes: List[NDArray[np.uint8]] = []
-        cells: List[NDArray[np.int64]] = []
+        cells: List[NDArray[np.integer]] = []
         part_ids = []
         for section in element_sections:
             section_cells, section_offset, section_celltypes = section.to_vtk()
@@ -230,14 +274,28 @@ class Deck:
             cells.append(id_map[section_cells])
             part_ids.append(section.pid)
 
-        offsets_arr = np.hstack(offsets, dtype=ID_TYPE)
-        cells_arr = np.hstack(cells, dtype=ID_TYPE)
+        cells_arr = np.hstack(cells, dtype=index_dtype)
+
+        # Offsets index the connectivity rather than the points, so they get
+        # their own check. VTK only drops to 32-bit storage when both arrays
+        # are int32, and a mismatch is promoted back to ID_TYPE.
+        offset_dtype = index_dtype if cells_arr.size <= _INT32_MAX else ID_TYPE
+        offsets_arr = np.hstack(offsets, dtype=offset_dtype)
         celltypes_arr = np.hstack(celltypes, dtype=np.uint8)
 
         grid = UnstructuredGrid()
         grid.points = pv.pyvista_ndarray(node_section.coordinates)
 
-        vtk_cells = CellArray.from_arrays(offsets_arr, cells_arr, deep=False)
+        # VTK 9.6.2 can store one cell width in place of an offset per cell,
+        # which is an array shorter by n_cells + 1 to build and to hold. Decks
+        # of one cell type qualify; ones mixing widths keep the offsets.
+        width = _uniform_cell_width(offsets_arr)
+        if width is None:
+            vtk_cells = CellArray.from_arrays(offsets_arr, cells_arr, deep=False)
+        else:
+            vtk_cells = vtkCellArray()
+            vtk_cells.SetData(width, numpy_to_vtk(cells_arr, deep=False))
+
         vtk_cell_type = numpy_to_vtk(celltypes_arr, deep=False)
         grid.SetCells(vtk_cell_type, vtk_cells)
 

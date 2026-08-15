@@ -220,3 +220,89 @@ def test_overwrite_node_section(tmp_path: Path) -> None:
     deck_new = lsdyna_mesh_reader.Deck(new_filename)
     assert np.allclose(deck_new.node_sections[0].coordinates, new_nodes)
     assert np.allclose(deck_new.node_sections[0].nid, deck.node_sections[0].nid)
+
+
+@pytest.mark.parametrize(
+    "file_path,expect_fixed",
+    [
+        (examples.simple_plate, True),  # solid elements alone
+        (examples.wheel, True),  # shell elements alone
+        (examples.birdball, False),  # shells and solids together
+        (examples.bracket, False),  # shells alone, but quads and triangles
+    ],
+)
+def test_to_grid_fixed_width_storage(file_path: str, expect_fixed: bool) -> None:
+    """A deck of one element width stores its cells without an offset array."""
+    grid = lsdyna_mesh_reader.Deck(file_path).to_grid()
+    assert grid.GetCells().IsStorageFixedSize() is expect_fixed
+
+    # the mesh has to come out the same either way, so compare against the
+    # grid built from explicit offsets
+    monkey = lsdyna_mesh_reader.deck._uniform_cell_width
+    lsdyna_mesh_reader.deck._uniform_cell_width = lambda offsets: None
+    try:
+        reference = lsdyna_mesh_reader.Deck(file_path).to_grid()
+    finally:
+        lsdyna_mesh_reader.deck._uniform_cell_width = monkey
+
+    assert reference.GetCells().IsStorageFixedSize() is False
+    assert np.array_equal(grid.cells, reference.cells)
+    assert np.array_equal(grid.offset, reference.offset)
+    assert np.array_equal(grid.celltypes, reference.celltypes)
+    assert np.array_equal(grid.points, reference.points)
+
+
+def test_uniform_cell_width() -> None:
+    """Only offsets with one repeated stride report a width."""
+    assert lsdyna_mesh_reader.deck._uniform_cell_width(np.array([0, 4, 8, 12])) == 4
+    assert lsdyna_mesh_reader.deck._uniform_cell_width(np.array([0, 4, 8, 14])) is None
+    assert lsdyna_mesh_reader.deck._uniform_cell_width(np.array([0])) is None
+
+
+ID_TYPE_SIZE = np.dtype(pv.ID_TYPE).itemsize
+
+
+def _cell_array_keeps_int32() -> bool:
+    """Return ``True`` when ``CellArray.from_arrays`` keeps an int32 connectivity.
+
+    PyVista only started honoring the dtype it was handed in 0.49; before that
+    it cast to ``pv.ID_TYPE``, which is 64-bit in the wheels. Probe the
+    behavior rather than the version so this tracks whatever is installed.
+    """
+    cells = pv.CellArray.from_arrays(
+        np.array([0, 3], dtype=np.int32), np.array([0, 1, 2], dtype=np.int32), deep=False
+    )
+    return bool(cells.GetConnectivityArray().GetDataTypeSize() == 4)
+
+
+CELL_ARRAY_KEEPS_INT32 = _cell_array_keeps_int32()
+
+
+@pytest.mark.parametrize("file_path", get_example_files())
+def test_to_grid_uses_int32(file_path: str) -> None:
+    """Decks small enough to index with int32 are stored that way."""
+    grid = lsdyna_mesh_reader.Deck(file_path).to_grid()
+    cells = grid.GetCells()
+
+    # IsStorage64Bit only describes the offsets, and fixed-width storage has
+    # none, so ask the connectivity array itself. The fixed-width path hands
+    # the int32 array straight to vtkCellArray and nothing casts it; the
+    # offsets path goes through CellArray.from_arrays, which only preserves
+    # int32 on pyvista 0.49 and up.
+    if cells.IsStorageFixedSize() or CELL_ARRAY_KEEPS_INT32:
+        assert cells.GetConnectivityArray().GetDataTypeSize() == 4
+    else:
+        assert cells.GetConnectivityArray().GetDataTypeSize() == ID_TYPE_SIZE
+
+    # the 64-bit path has to produce the same mesh
+    monkey = lsdyna_mesh_reader.deck._INT32_MAX
+    lsdyna_mesh_reader.deck._INT32_MAX = -1
+    try:
+        wide = lsdyna_mesh_reader.Deck(file_path).to_grid()
+    finally:
+        lsdyna_mesh_reader.deck._INT32_MAX = monkey
+
+    assert wide.GetCells().GetConnectivityArray().GetDataTypeSize() == ID_TYPE_SIZE
+    assert np.array_equal(grid.cells, wide.cells)
+    assert np.array_equal(grid.offset, wide.offset)
+    assert np.array_equal(grid.celltypes, wide.celltypes)
