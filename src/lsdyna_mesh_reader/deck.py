@@ -21,7 +21,14 @@ if TYPE_CHECKING:
         pass
 
 
-def _uniform_cell_width(offsets: NDArray[np.int64]) -> Union[int, None]:
+#: Largest value ``int32`` cell arrays can hold. VTK stores 32-bit offsets and
+#: connectivity natively, at half the memory of the 64-bit ``ID_TYPE``, so the
+#: grid is built from ``int32`` whenever the deck indexes fewer points than
+#: this.
+_INT32_MAX = np.iinfo(np.int32).max
+
+
+def _uniform_cell_width(offsets: NDArray[np.integer]) -> Union[int, None]:
     """Return the points per cell when every cell is the same width.
 
     Parameters
@@ -234,9 +241,15 @@ class Deck:
 
         node_section = self.node_sections[0]
 
+        n_points = len(node_section)
+
+        # Point indices only have to reach n_points, so int32 covers any deck
+        # short of 2**31 nodes and keeps the connectivity half the size.
+        index_dtype = np.int32 if n_points <= _INT32_MAX else ID_TYPE
+
         # map between the node ids and a sequential index
-        id_map = np.empty(node_section.nid[-1] + 1, dtype=ID_TYPE)
-        id_map[node_section.nid] = np.arange(len(node_section), dtype=ID_TYPE)
+        id_map = np.empty(node_section.nid[-1] + 1, dtype=index_dtype)
+        id_map[node_section.nid] = np.arange(n_points, dtype=index_dtype)
 
         element_sections = self.element_shell_sections + self.element_solid_sections
 
@@ -244,9 +257,9 @@ class Deck:
             raise NotImplementedError("Deck missing element sections")
 
         # add shell sections
-        offsets: List[NDArray[np.int64]] = []
+        offsets: List[NDArray[np.integer]] = []
         celltypes: List[NDArray[np.uint8]] = []
-        cells: List[NDArray[np.int64]] = []
+        cells: List[NDArray[np.integer]] = []
         part_ids = []
         for section in element_sections:
             section_cells, section_offset, section_celltypes = section.to_vtk()
@@ -260,8 +273,13 @@ class Deck:
             cells.append(id_map[section_cells])
             part_ids.append(section.pid)
 
-        offsets_arr = np.hstack(offsets, dtype=ID_TYPE)
-        cells_arr = np.hstack(cells, dtype=ID_TYPE)
+        cells_arr = np.hstack(cells, dtype=index_dtype)
+
+        # Offsets index the connectivity rather than the points, so they get
+        # their own check. VTK only drops to 32-bit storage when both arrays
+        # are int32, and a mismatch is promoted back to ID_TYPE.
+        offset_dtype = index_dtype if cells_arr.size <= _INT32_MAX else ID_TYPE
+        offsets_arr = np.hstack(offsets, dtype=offset_dtype)
         celltypes_arr = np.hstack(celltypes, dtype=np.uint8)
 
         grid = UnstructuredGrid()

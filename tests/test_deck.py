@@ -256,3 +256,26 @@ def test_uniform_cell_width() -> None:
     assert lsdyna_mesh_reader.deck._uniform_cell_width(np.array([0, 4, 8, 12])) == 4
     assert lsdyna_mesh_reader.deck._uniform_cell_width(np.array([0, 4, 8, 14])) is None
     assert lsdyna_mesh_reader.deck._uniform_cell_width(np.array([0])) is None
+
+
+@pytest.mark.parametrize("file_path", get_example_files())
+def test_to_grid_uses_int32(file_path: str) -> None:
+    """Decks small enough to index with int32 are stored that way."""
+    grid = lsdyna_mesh_reader.Deck(file_path).to_grid()
+
+    # IsStorage64Bit only describes the offsets, and fixed-width storage has
+    # none, so ask the connectivity array itself.
+    assert grid.GetCells().GetConnectivityArray().GetDataTypeSize() == 4
+
+    # the 64-bit path has to produce the same mesh
+    monkey = lsdyna_mesh_reader.deck._INT32_MAX
+    lsdyna_mesh_reader.deck._INT32_MAX = -1
+    try:
+        wide = lsdyna_mesh_reader.Deck(file_path).to_grid()
+    finally:
+        lsdyna_mesh_reader.deck._INT32_MAX = monkey
+
+    assert wide.GetCells().GetConnectivityArray().GetDataTypeSize() == 8
+    assert np.array_equal(grid.cells, wide.cells)
+    assert np.array_equal(grid.offset, wide.offset)
+    assert np.array_equal(grid.celltypes, wide.celltypes)
