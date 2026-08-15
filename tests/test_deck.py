@@ -220,3 +220,39 @@ def test_overwrite_node_section(tmp_path: Path) -> None:
     deck_new = lsdyna_mesh_reader.Deck(new_filename)
     assert np.allclose(deck_new.node_sections[0].coordinates, new_nodes)
     assert np.allclose(deck_new.node_sections[0].nid, deck.node_sections[0].nid)
+
+
+@pytest.mark.parametrize(
+    "file_path,expect_fixed",
+    [
+        (examples.simple_plate, True),  # solid elements alone
+        (examples.wheel, True),  # shell elements alone
+        (examples.birdball, False),  # shells and solids together
+    ],
+)
+def test_to_grid_fixed_width_storage(file_path: str, expect_fixed: bool) -> None:
+    """A deck of one element width stores its cells without an offset array."""
+    grid = lsdyna_mesh_reader.Deck(file_path).to_grid()
+    assert grid.GetCells().IsStorageFixedSize() is expect_fixed
+
+    # the mesh has to come out the same either way, so compare against the
+    # grid built from explicit offsets
+    monkey = lsdyna_mesh_reader.deck._uniform_cell_width
+    lsdyna_mesh_reader.deck._uniform_cell_width = lambda offsets: None
+    try:
+        reference = lsdyna_mesh_reader.Deck(file_path).to_grid()
+    finally:
+        lsdyna_mesh_reader.deck._uniform_cell_width = monkey
+
+    assert reference.GetCells().IsStorageFixedSize() is False
+    assert np.array_equal(grid.cells, reference.cells)
+    assert np.array_equal(grid.offset, reference.offset)
+    assert np.array_equal(grid.celltypes, reference.celltypes)
+    assert np.array_equal(grid.points, reference.points)
+
+
+def test_uniform_cell_width() -> None:
+    """Only offsets with one repeated stride report a width."""
+    assert lsdyna_mesh_reader.deck._uniform_cell_width(np.array([0, 4, 8, 12])) == 4
+    assert lsdyna_mesh_reader.deck._uniform_cell_width(np.array([0, 4, 8, 14])) is None
+    assert lsdyna_mesh_reader.deck._uniform_cell_width(np.array([0])) is None

@@ -21,6 +21,35 @@ if TYPE_CHECKING:
         pass
 
 
+def _uniform_cell_width(offsets: NDArray[np.int64]) -> Union[int, None]:
+    """Return the points per cell when every cell is the same width.
+
+    Parameters
+    ----------
+    offsets : numpy.ndarray
+        ``(n_cells + 1,)`` offsets into the connectivity.
+
+    Returns
+    -------
+    int | None
+        Points per cell, or ``None`` when the widths vary or there are no
+        cells. A deck of shells alone or solids alone is uniform; one mixing
+        the two is not.
+
+    """
+    if offsets.size < 2:
+        return None
+
+    width = int(offsets[1] - offsets[0])
+
+    # a single subtraction rejects the mixed case before scanning every offset
+    if width * (offsets.size - 1) != int(offsets[-1] - offsets[0]):
+        return None
+    if (np.diff(offsets) != width).any():
+        return None
+    return width
+
+
 class Deck:
     r"""LS-DYNA deck.
 
@@ -194,10 +223,11 @@ class Deck:
         try:
             import pyvista as pv
             from pyvista import ID_TYPE, CellArray
+            from pyvista._vtk import numpy_to_vtk, vtkCellArray
             from pyvista.core.pointset import UnstructuredGrid
-            from vtkmodules.util.numpy_support import numpy_to_vtk
-        except ImportError:
-            pass
+        except ImportError as exc:
+            msg = "Deck.to_grid requires PyVista. Install it with: pip install pyvista"
+            raise ImportError(msg) from exc
 
         if not self.node_sections:
             raise RuntimeError("Missing node sections. Unable to generate UnstructuredGrid.")
@@ -237,7 +267,16 @@ class Deck:
         grid = UnstructuredGrid()
         grid.points = pv.pyvista_ndarray(node_section.coordinates)
 
-        vtk_cells = CellArray.from_arrays(offsets_arr, cells_arr, deep=False)
+        # VTK 9.6.2 can store one cell width in place of an offset per cell,
+        # which is an array shorter by n_cells + 1 to build and to hold. Decks
+        # of shells alone or solids alone qualify; mixed ones keep the offsets.
+        width = _uniform_cell_width(offsets_arr)
+        if width is None:
+            vtk_cells = CellArray.from_arrays(offsets_arr, cells_arr, deep=False)
+        else:
+            vtk_cells = vtkCellArray()
+            vtk_cells.SetData(width, numpy_to_vtk(cells_arr, deep=False))
+
         vtk_cell_type = numpy_to_vtk(celltypes_arr, deep=False)
         grid.SetCells(vtk_cell_type, vtk_cells)
 
