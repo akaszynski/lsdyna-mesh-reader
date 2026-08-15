@@ -40,8 +40,9 @@ def _uniform_cell_width(offsets: NDArray[np.integer]) -> Union[int, None]:
     -------
     int | None
         Points per cell, or ``None`` when the widths vary or there are no
-        cells. A deck of shells alone or solids alone is uniform; one mixing
-        the two is not.
+        cells. Every cell has to be the same width, so a deck of quads alone
+        or hexahedra alone is uniform, while one mixing quads with triangles,
+        or shells with solids, is not.
 
     """
     if offsets.size < 2:
@@ -287,7 +288,7 @@ class Deck:
 
         # VTK 9.6.2 can store one cell width in place of an offset per cell,
         # which is an array shorter by n_cells + 1 to build and to hold. Decks
-        # of shells alone or solids alone qualify; mixed ones keep the offsets.
+        # of one cell type qualify; ones mixing widths keep the offsets.
         width = _uniform_cell_width(offsets_arr)
         if width is None:
             vtk_cells = CellArray.from_arrays(offsets_arr, cells_arr, deep=False)
