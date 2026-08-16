@@ -62,3 +62,6 @@ compile_commands.json
 
 # cache
 .cache
+
+# written by setuptools_scm at build time
+src/lsdyna_mesh_reader/_version.py
