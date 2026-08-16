@@ -1,0 +1,6 @@
+# LS-DYNA keyword decks are fixed-width: a field is identified by its column,
+# so an end-of-line conversion on checkout would put a stray CR inside the last
+# field of every line. Hand them over byte for byte on every platform.
+*.k   binary
+*.key binary
+*.dyn binary
