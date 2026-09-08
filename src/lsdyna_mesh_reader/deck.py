@@ -262,8 +262,14 @@ class Deck:
         celltypes: List[NDArray[np.uint8]] = []
         cells: List[NDArray[np.integer]] = []
         part_ids = []
+        vtk_97_wedges = pv.vtk_version_info >= (9, 7)
         for section in element_sections:
-            section_cells, section_offset, section_celltypes = section.to_vtk()
+            if isinstance(section, ElementSolidSection):
+                section_cells, section_offset, section_celltypes = section.to_vtk(
+                    vtk_97_wedges=vtk_97_wedges
+                )
+            else:
+                section_cells, section_offset, section_celltypes = section.to_vtk()
             if offsets:
                 # we need to shift by the last value of the last offset
                 offsets.append(section_offset[1:] + offsets[-1][-1])

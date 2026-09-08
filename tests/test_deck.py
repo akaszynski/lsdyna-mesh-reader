@@ -94,7 +94,8 @@ def test_node_section(tmp_path: Path) -> None:
     assert np.allclose(node_section.rc, [0, 3, 4, 0, 0])
 
 
-def test_element_solid_section(tmp_path: Path) -> None:
+@pytest.mark.parametrize("vtk_97_wedges", [None, False, True])
+def test_element_solid_section(tmp_path: Path, vtk_97_wedges) -> None:
     filename = str(tmp_path / "tmp.k")
     with open(filename, "w") as fid:
         fid.write(ELEMENT_SOLID_SECTION)
@@ -111,12 +112,15 @@ def test_element_solid_section(tmp_path: Path) -> None:
     assert np.allclose(section.pid, [1] * 3)
     assert np.allclose(section.node_ids, np.array(ELEMENT_SOLID_SECTION_ELEMS).ravel())
 
-    cells, offset, celltypes = section.to_vtk()
+    if vtk_97_wedges is None:
+        cells, offset, celltypes = section.to_vtk()
+    else:
+        cells, offset, celltypes = section.to_vtk(vtk_97_wedges=vtk_97_wedges)
     expected_cells = np.hstack(
         [
             ELEMENT_SOLID_SECTION_ELEMS[0],  # hex
             ELEMENT_SOLID_SECTION_ELEMS[1][:4],  # tet
-            [6, 7, 22, 10, 11, 23],  # remapped to vtk style wedge
+            [6, 22, 7, 10, 23, 11] if vtk_97_wedges else [6, 7, 22, 10, 11, 23],
         ]
     )
     assert np.allclose(cells, expected_cells)
@@ -125,6 +129,7 @@ def test_element_solid_section(tmp_path: Path) -> None:
 
     offsets = np.cumsum([0] + [len(element) for element in ELEMENT_SOLID_SECTION_ELEMS])
     assert np.allclose(section.node_id_offsets, offsets)
+    np.testing.assert_array_equal(section.node_ids, np.array(ELEMENT_SOLID_SECTION_ELEMS).ravel())
 
 
 def test_element_shell_section(tmp_path: Path) -> None:
@@ -306,3 +311,30 @@ def test_to_grid_uses_int32(file_path: str) -> None:
     assert np.array_equal(grid.cells, wide.cells)
     assert np.array_equal(grid.offset, wide.offset)
     assert np.array_equal(grid.celltypes, wide.celltypes)
+
+
+@pytest.mark.parametrize("include_shell", [False, True])
+def test_to_grid_wedge_has_positive_volume(tmp_path, include_shell):
+    """Map a synthetic degenerate brick to VTK's version-specific wedge order."""
+    points = np.array([[0, 0, 0], [1, 0, 0], [1, 1, 0], [0, 1, 0], [0, 0, 1], [0, 1, 1]], float)
+    path = tmp_path / "prism.k"
+    with path.open("w") as stream:
+        stream.write("*KEYWORD\n*NODE\n")
+        for nid, (x, y, z) in enumerate(points, 1):
+            stream.write(f"{nid:8d}{x:16.9e}{y:16.9e}{z:16.9e}\n")
+        stream.write("*ELEMENT_SOLID\n")
+        stream.write("".join(f"{n:8d}" for n in [1, 1, 1, 2, 3, 4, 5, 6, 6, 6]))
+        if include_shell:
+            stream.write("\n*ELEMENT_SHELL\n")
+            stream.write("".join(f"{n:8d}" for n in [2, 2, 1, 2, 5, 5]))
+        stream.write("\n*END\n")
+    grid = lsdyna_mesh_reader.Deck(path).to_grid()
+    expected_types = (
+        [pv.CellType.TRIANGLE, pv.CellType.WEDGE] if include_shell else [pv.CellType.WEDGE]
+    )
+    assert grid.celltypes.tolist() == expected_types
+    np.testing.assert_array_equal(grid.cell_data["Part ID"], [2, 1] if include_shell else [1])
+    assert grid.volume == pytest.approx(0.5)
+    assert grid.cell_quality()["scaled_jacobian"][-1] > 0
+    np.testing.assert_array_equal(grid.point_data["Node ID"], np.arange(1, 7))
+    np.testing.assert_array_equal(grid.points, points)
