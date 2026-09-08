@@ -306,3 +306,22 @@ def test_to_grid_uses_int32(file_path: str) -> None:
     assert np.array_equal(grid.cells, wide.cells)
     assert np.array_equal(grid.offset, wide.offset)
     assert np.array_equal(grid.celltypes, wide.celltypes)
+
+
+def test_to_grid_wedge_has_positive_volume(tmp_path):
+    """Map a synthetic degenerate brick to VTK's version-specific wedge order."""
+    points = np.array([[0, 0, 0], [1, 0, 0], [1, 1, 0], [0, 1, 0], [0, 0, 1], [0, 1, 1]], float)
+    path = tmp_path / "prism.k"
+    with path.open("w") as stream:
+        stream.write("*KEYWORD\n*NODE\n")
+        for nid, (x, y, z) in enumerate(points, 1):
+            stream.write(f"{nid:8d}{x:16.9e}{y:16.9e}{z:16.9e}\n")
+        stream.write("*ELEMENT_SOLID\n")
+        stream.write("".join(f"{n:8d}" for n in [1, 1, 1, 2, 3, 4, 5, 6, 6, 6]))
+        stream.write("\n*END\n")
+    grid = lsdyna_mesh_reader.Deck(path).to_grid()
+    assert grid.celltypes.tolist() == [pv.CellType.WEDGE]
+    assert grid.volume == pytest.approx(0.5)
+    assert grid.cell_quality()["scaled_jacobian"][0] > 0
+    np.testing.assert_array_equal(grid.point_data["Node ID"], np.arange(1, 7))
+    np.testing.assert_array_equal(grid.points, points)

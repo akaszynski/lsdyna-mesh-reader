@@ -283,6 +283,13 @@ class Deck:
         offsets_arr = np.hstack(offsets, dtype=offset_dtype)
         celltypes_arr = np.hstack(celltypes, dtype=np.uint8)
 
+        # The native solid-section mapping uses the historical VTK wedge order.
+        # VTK 9.7 follows the parametric-coordinate winding instead.
+        if pv.vtk_version_info >= (9, 7):
+            wedge_ids = np.flatnonzero(celltypes_arr == pv.CellType.WEDGE)
+            positions = offsets_arr[wedge_ids, None] + np.arange(6)
+            cells_arr[positions] = cells_arr[positions[:, [0, 2, 1, 3, 5, 4]]]
+
         grid = UnstructuredGrid()
         grid.points = pv.pyvista_ndarray(node_section.coordinates)
 
