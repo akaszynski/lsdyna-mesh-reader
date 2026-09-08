@@ -262,8 +262,14 @@ class Deck:
         celltypes: List[NDArray[np.uint8]] = []
         cells: List[NDArray[np.integer]] = []
         part_ids = []
+        vtk_97_wedges = pv.vtk_version_info >= (9, 7)
         for section in element_sections:
-            section_cells, section_offset, section_celltypes = section.to_vtk()
+            if isinstance(section, ElementSolidSection):
+                section_cells, section_offset, section_celltypes = section.to_vtk(
+                    vtk_97_wedges=vtk_97_wedges
+                )
+            else:
+                section_cells, section_offset, section_celltypes = section.to_vtk()
             if offsets:
                 # we need to shift by the last value of the last offset
                 offsets.append(section_offset[1:] + offsets[-1][-1])
@@ -282,13 +288,6 @@ class Deck:
         offset_dtype = index_dtype if cells_arr.size <= _INT32_MAX else ID_TYPE
         offsets_arr = np.hstack(offsets, dtype=offset_dtype)
         celltypes_arr = np.hstack(celltypes, dtype=np.uint8)
-
-        # The native solid-section mapping uses the historical VTK wedge order.
-        # VTK 9.7 follows the parametric-coordinate winding instead.
-        if pv.vtk_version_info >= (9, 7):
-            wedge_ids = np.flatnonzero(celltypes_arr == pv.CellType.WEDGE)
-            positions = offsets_arr[wedge_ids, None] + np.arange(6)
-            cells_arr[positions] = cells_arr[positions[:, [0, 2, 1, 3, 5, 4]]]
 
         grid = UnstructuredGrid()
         grid.points = pv.pyvista_ndarray(node_section.coordinates)

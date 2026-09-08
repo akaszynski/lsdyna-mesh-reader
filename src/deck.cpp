@@ -534,7 +534,13 @@ struct ElementSolidSection : public ElementSection {
   }
 
   // convert cells, offset, and celltypes to vtk style arrays
-  nb::tuple ToVTK() {
+  nb::tuple ToVTK(const bool vtk_97_wedges) {
+    // Select the LS-DYNA-to-VTK node mapping once, before assembling cells.
+    // https://docs.vtk.org/en/latest/release_details/9.7/fix-wedge-point-ordering.html
+    static constexpr int legacy_wedge_nodes[6] = {0, 1, 4, 3, 2, 5};
+    static constexpr int vtk_97_wedge_nodes[6] = {0, 4, 1, 3, 5, 2};
+    const int *wedge_nodes =
+        vtk_97_wedges ? vtk_97_wedge_nodes : legacy_wedge_nodes;
     NDArray<uint8_t, 1> celltypes_arr = MakeNDArray<uint8_t, 1>({(int)n_elem});
     NDArray<int64_t, 1> offsets_arr =
         MakeNDArray<int64_t, 1>({(int)(n_elem + 1)});
@@ -566,13 +572,9 @@ struct ElementSolidSection : public ElementSection {
         el_sz = 4;
       } else if (node_ids_data[offset + 5] == node_ids_data[offset + 6]) {
         celltypes[i] = VTK_WEDGE;
-        // map to vtk style
-        cells[c++] = node_ids_data[offset + 0];
-        cells[c++] = node_ids_data[offset + 1];
-        cells[c++] = node_ids_data[offset + 4];
-        cells[c++] = node_ids_data[offset + 3];
-        cells[c++] = node_ids_data[offset + 2];
-        cells[c++] = node_ids_data[offset + 5];
+        for (int j = 0; j < 6; ++j) {
+          cells[c++] = node_ids_data[offset + wedge_nodes[j]];
+        }
         el_sz = 6;
       } else {
         celltypes[i] = VTK_HEXAHEDRON;
@@ -985,7 +987,8 @@ NB_MODULE(_deck, m) {
       .def(nb::init())
       .def("__repr__", &ElementSolidSection::ToString)
       .def("__len__", &ElementSolidSection::Length)
-      .def("to_vtk", &ElementSolidSection::ToVTK)
+      .def("to_vtk", &ElementSolidSection::ToVTK,
+           nb::arg("vtk_97_wedges") = false)
       .def_ro("eid", &ElementSolidSection::eid, nb::rv_policy::automatic)
       .def_ro("pid", &ElementSolidSection::pid, nb::rv_policy::automatic)
       .def_ro("node_ids", &ElementSolidSection::node_ids,
