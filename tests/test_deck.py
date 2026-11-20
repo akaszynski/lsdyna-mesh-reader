@@ -338,3 +338,123 @@ def test_to_grid_wedge_has_positive_volume(tmp_path, include_shell):
     assert grid.cell_quality()["scaled_jacobian"][-1] > 0
     np.testing.assert_array_equal(grid.point_data["Node ID"], np.arange(1, 7))
     np.testing.assert_array_equal(grid.points, points)
+
+
+@pytest.mark.parametrize(
+    "points,nodes,expected_type,expected_volume",
+    [
+        pytest.param(
+            [[0, 0, 0], [1, 0, 0], [1, 1, 0], [0, 1, 0], [0.5, 0, 1], [0.5, 1, 1]],
+            [1, 2, 3, 4, 5, 5, 6, 6],
+            pv.CellType.WEDGE,
+            0.5,
+            id="wedge-n4n5-n6n7",
+        ),
+        pytest.param(
+            [[0, 0, 0], [1, 0, 0], [1, 1, 0], [0, 1, 0], [0, 0.5, 1], [1, 0.5, 1]],
+            [1, 2, 3, 4, 5, 6, 6, 5],
+            pv.CellType.WEDGE,
+            0.5,
+            id="wedge-n4n7-n5n6",
+        ),
+        pytest.param(
+            [[0, 0, 0], [1, 0, 0], [0, 1, 0], [0, 0, 1], [1, 0, 1], [0, 1, 1]],
+            [1, 2, 3, 3, 4, 5, 6, 6],
+            pv.CellType.WEDGE,
+            0.5,
+            id="wedge-n2n3-n6n7",
+        ),
+        pytest.param(
+            [[0, 0, 0], [1, 0, 0], [0, 1, 0], [0, 0, 1], [1, 0, 1], [0, 1, 1]],
+            [1, 2, 3, 1, 4, 5, 6, 4],
+            pv.CellType.WEDGE,
+            0.5,
+            id="wedge-n0n3-n4n7",
+        ),
+        pytest.param(
+            [[0, 0, 0], [1, 0, 0], [0, 1, 0], [0, 0, 1], [1, 0, 1], [0, 1, 1]],
+            [1, 2, 2, 3, 4, 5, 5, 6],
+            pv.CellType.WEDGE,
+            0.5,
+            id="wedge-n1n2-n5n6",
+        ),
+        pytest.param(
+            [[0, 0, 0], [1, 0, 0], [0, 1, 0], [0, 0, 1], [1, 0, 1], [0, 1, 1]],
+            [1, 1, 2, 3, 4, 4, 5, 6],
+            pv.CellType.WEDGE,
+            0.5,
+            id="wedge-n0n1-n4n5",
+        ),
+        pytest.param(
+            [[0, 0, 0], [1, 0, 0], [1, 1, 0], [0, 1, 0], [0.5, 0.5, 1]],
+            [1, 2, 3, 4, 5, 5, 5, 5],
+            pv.CellType.PYRAMID,
+            1.0 / 3.0,
+            id="pyramid-n4n5n6n7",
+        ),
+        pytest.param(
+            [[0, 0, 0], [1, 0, 0], [0, 1, 0], [0, 0, 1]],
+            [1, 2, 3, 3, 4, 4, 4, 4],
+            pv.CellType.TETRA,
+            1.0 / 6.0,
+            id="tetra-n2n3-n4n5n6n7",
+        ),
+    ],
+)
+def test_to_grid_degenerate_solids_have_positive_volume(
+    tmp_path: Path,
+    points: list[list[float]],
+    nodes: list[int],
+    expected_type: pv.CellType,
+    expected_volume: float,
+) -> None:
+    """Map degenerate 8-node solids to oriented VTK wedges, pyramids, and tetrahedra."""
+    pts = np.asarray(points, dtype=float)
+    path = tmp_path / "degen.k"
+    with path.open("w") as stream:
+        stream.write("*KEYWORD\n*NODE\n")
+        for nid, (x, y, z) in enumerate(pts, 1):
+            stream.write(f"{nid:8d}{x:16.9e}{y:16.9e}{z:16.9e}\n")
+        stream.write("*ELEMENT_SOLID\n")
+        stream.write("".join(f"{n:8d}" for n in [1, 1, *nodes]))
+        stream.write("\n*END\n")
+    grid = lsdyna_mesh_reader.Deck(path).to_grid()
+    assert grid.celltypes.tolist() == [expected_type]
+    assert grid.volume == pytest.approx(expected_volume)
+    assert grid.cell_quality()["scaled_jacobian"][0] > 0
+
+
+@pytest.mark.parametrize(
+    "nodes,legacy_expected,vtk97_expected",
+    [
+        ([1, 2, 3, 4, 5, 5, 6, 6], [1, 2, 5, 4, 3, 6], [1, 5, 2, 4, 6, 3]),
+        ([1, 2, 3, 4, 5, 6, 6, 5], [1, 5, 4, 2, 6, 3], [1, 4, 5, 2, 3, 6]),
+        ([1, 2, 3, 3, 4, 5, 6, 6], [1, 3, 2, 4, 6, 5], [1, 2, 3, 4, 5, 6]),
+        ([1, 2, 3, 1, 4, 5, 6, 4], [1, 3, 2, 4, 6, 5], [1, 2, 3, 4, 5, 6]),
+        ([1, 2, 2, 3, 4, 5, 5, 6], [1, 3, 2, 4, 6, 5], [1, 2, 3, 4, 5, 6]),
+        ([1, 1, 2, 3, 4, 4, 5, 6], [1, 3, 2, 4, 6, 5], [1, 2, 3, 4, 5, 6]),
+    ],
+)
+def test_degenerate_wedge_ordering_variants(
+    tmp_path: Path,
+    nodes: list[int],
+    legacy_expected: list[int],
+    vtk97_expected: list[int],
+) -> None:
+    """Verify both legacy and VTK 9.7 wedge orders for alternate hex collapses."""
+    path = tmp_path / "wedge_order.k"
+    path.write_text("*ELEMENT_SOLID\n" + "".join(f"{n:8d}" for n in [1, 1, *nodes]) + "\n*END\n")
+    deck = _Deck(str(path))
+    deck.read_line()
+    deck.read_element_solid_section()
+    section = deck.element_solid_sections[0]
+
+    legacy_cells, legacy_off, legacy_types = section.to_vtk(vtk_97_wedges=False)
+    vtk97_cells, vtk97_off, vtk97_types = section.to_vtk(vtk_97_wedges=True)
+
+    np.testing.assert_array_equal(legacy_cells, legacy_expected)
+    np.testing.assert_array_equal(vtk97_cells, vtk97_expected)
+    np.testing.assert_array_equal(legacy_off, [0, 6])
+    np.testing.assert_array_equal(vtk97_off, [0, 6])
+    np.testing.assert_array_equal(legacy_types, [pv.CellType.WEDGE])
+    np.testing.assert_array_equal(vtk97_types, [pv.CellType.WEDGE])

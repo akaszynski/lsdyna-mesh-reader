@@ -535,12 +535,6 @@ struct ElementSolidSection : public ElementSection {
 
   // convert cells, offset, and celltypes to vtk style arrays
   nb::tuple ToVTK(const bool vtk_97_wedges) {
-    // Select the LS-DYNA-to-VTK node mapping once, before assembling cells.
-    // https://docs.vtk.org/en/latest/release_details/9.7/fix-wedge-point-ordering.html
-    static constexpr int legacy_wedge_nodes[6] = {0, 1, 4, 3, 2, 5};
-    static constexpr int vtk_97_wedge_nodes[6] = {0, 4, 1, 3, 5, 2};
-    const int *wedge_nodes =
-        vtk_97_wedges ? vtk_97_wedge_nodes : legacy_wedge_nodes;
     NDArray<uint8_t, 1> celltypes_arr = MakeNDArray<uint8_t, 1>({(int)n_elem});
     NDArray<int64_t, 1> offsets_arr =
         MakeNDArray<int64_t, 1>({(int)(n_elem + 1)});
@@ -558,29 +552,87 @@ struct ElementSolidSection : public ElementSection {
 
     int c = 0;
     offsets[0] = 0;
-    uint8_t celltype = VTK_EMPTY_CELL;
-    for (int i = 0; i < n_elem; i++) {
 
+    // Emit a VTK_WEDGE from indices ordered for VTK 9.7+ (triangle A normal
+    // pointing toward triangle B); swap the second and third vertex of each
+    // triangle for legacy VTK (< 9.7) ordering.
+    // https://docs.vtk.org/en/latest/release_details/9.7/fix-wedge-point-ordering.html
+    auto emit_wedge = [&](const int *n, int a0, int a1, int a2, int b0, int b1,
+                          int b2) {
+      if (vtk_97_wedges) {
+        cells[c++] = n[a0];
+        cells[c++] = n[a1];
+        cells[c++] = n[a2];
+        cells[c++] = n[b0];
+        cells[c++] = n[b1];
+        cells[c++] = n[b2];
+      } else {
+        cells[c++] = n[a0];
+        cells[c++] = n[a2];
+        cells[c++] = n[a1];
+        cells[c++] = n[b0];
+        cells[c++] = n[b2];
+        cells[c++] = n[b1];
+      }
+    };
+
+    for (int i = 0; i < n_elem; i++) {
       int el_sz = 0;
-      int offset = node_id_offsets_data[i];
-      if (node_ids_data[offset + 3] == node_ids_data[offset + 4]) {
+      const int *n = node_ids_data + node_id_offsets_data[i];
+      const bool top_collapsed =
+          (n[4] == n[5]) && (n[5] == n[6]) && (n[6] == n[7]);
+      if (n[3] == n[4]) {
         celltypes[i] = VTK_TETRA;
-        cells[c++] = node_ids_data[offset + 0];
-        cells[c++] = node_ids_data[offset + 1];
-        cells[c++] = node_ids_data[offset + 2];
-        cells[c++] = node_ids_data[offset + 3];
+        cells[c++] = n[0];
+        cells[c++] = n[1];
+        cells[c++] = n[2];
+        cells[c++] = n[3];
         el_sz = 4;
-      } else if (node_ids_data[offset + 5] == node_ids_data[offset + 6]) {
+      } else if (top_collapsed && n[2] == n[3]) {
+        celltypes[i] = VTK_TETRA;
+        cells[c++] = n[0];
+        cells[c++] = n[1];
+        cells[c++] = n[2];
+        cells[c++] = n[4];
+        el_sz = 4;
+      } else if (top_collapsed) {
+        celltypes[i] = VTK_PYRAMID;
+        cells[c++] = n[0];
+        cells[c++] = n[1];
+        cells[c++] = n[2];
+        cells[c++] = n[3];
+        cells[c++] = n[4];
+        el_sz = 5;
+      } else if (n[4] == n[5] && n[6] == n[7]) {
         celltypes[i] = VTK_WEDGE;
-        for (int j = 0; j < 6; ++j) {
-          cells[c++] = node_ids_data[offset + wedge_nodes[j]];
-        }
+        emit_wedge(n, 0, 4, 1, 3, 6, 2);
+        el_sz = 6;
+      } else if (n[4] == n[7] && n[5] == n[6]) {
+        celltypes[i] = VTK_WEDGE;
+        emit_wedge(n, 0, 3, 4, 1, 2, 5);
+        el_sz = 6;
+      } else if ((n[2] == n[3] && n[6] == n[7]) ||
+                 (n[0] == n[3] && n[4] == n[7])) {
+        celltypes[i] = VTK_WEDGE;
+        emit_wedge(n, 0, 1, 2, 4, 5, 6);
+        el_sz = 6;
+      } else if (n[1] == n[2] && n[5] == n[6]) {
+        celltypes[i] = VTK_WEDGE;
+        emit_wedge(n, 0, 1, 3, 4, 5, 7);
+        el_sz = 6;
+      } else if (n[0] == n[1] && n[4] == n[5]) {
+        celltypes[i] = VTK_WEDGE;
+        emit_wedge(n, 0, 2, 3, 4, 6, 7);
+        el_sz = 6;
+      } else if (n[5] == n[6]) {
+        celltypes[i] = VTK_WEDGE;
+        emit_wedge(n, 0, 4, 1, 3, 5, 2);
         el_sz = 6;
       } else {
         celltypes[i] = VTK_HEXAHEDRON;
         // assuming compiler is smart enough to unroll this
         for (int j = 0; j < 8; j++) {
-          cells[c++] = node_ids_data[offset + j];
+          cells[c++] = n[j];
         }
         el_sz = 8;
       } // cell type branching
