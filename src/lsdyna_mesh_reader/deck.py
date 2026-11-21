@@ -231,7 +231,12 @@ class Deck:
         try:
             import pyvista as pv
             from pyvista import ID_TYPE, CellArray
-            from pyvista._vtk import numpy_to_vtk, vtkCellArray
+            from pyvista._vtk import (
+                numpy_to_vtk,
+                vtkCellArray,
+                vtkTypeInt32Array,
+                vtkTypeInt64Array,
+            )
             from pyvista.core.pointset import UnstructuredGrid
         except ImportError as exc:
             msg = "Deck.to_grid requires PyVista. Install it with: pip install pyvista"
@@ -299,8 +304,16 @@ class Deck:
         if width is None:
             vtk_cells = CellArray.from_arrays(offsets_arr, cells_arr, deep=False)
         else:
+            # Specify the exact VTK fixed-width integer array type; otherwise
+            # numpy_to_vtk maps C long (np.int32 on Windows, np.int64 on LP64)
+            # to vtkLongArray, which VTK 9.7.2 declines for fixed-size storage.
+            array_type = (
+                vtkTypeInt32Array().GetDataType()
+                if cells_arr.dtype == np.int32
+                else vtkTypeInt64Array().GetDataType()
+            )
             vtk_cells = vtkCellArray()
-            vtk_cells.SetData(width, numpy_to_vtk(cells_arr, deep=False))
+            vtk_cells.SetData(width, numpy_to_vtk(cells_arr, deep=False, array_type=array_type))
 
         vtk_cell_type = numpy_to_vtk(celltypes_arr, deep=False)
         grid.SetCells(vtk_cell_type, vtk_cells)

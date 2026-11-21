@@ -308,6 +308,7 @@ def test_to_grid_uses_int32(file_path: str) -> None:
         lsdyna_mesh_reader.deck._INT32_MAX = monkey
 
     assert wide.GetCells().GetConnectivityArray().GetDataTypeSize() == ID_TYPE_SIZE
+    assert wide.GetCells().IsStorageFixedSize() is cells.IsStorageFixedSize()
     assert np.array_equal(grid.cells, wide.cells)
     assert np.array_equal(grid.offset, wide.offset)
     assert np.array_equal(grid.celltypes, wide.celltypes)
